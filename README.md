@@ -51,11 +51,11 @@ To transcode and stream unsupported media files to a Chromecast.
 
     - for an ffmpeg transcoding:-
 
-        stream2chromecast.py -ffmpeg my_dvd_rip.mpg
+        stream2chromecast.py -ffmpeg my_mpeg_file.mpg
 
     - for an avconv transcoding:-
 
-        stream2chromecast.py -avconv my_dvd_rip.mpg
+        stream2chromecast.py -avconv my_mpeg_file.mpg
 
 
 
