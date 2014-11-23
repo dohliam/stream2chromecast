@@ -22,7 +22,7 @@ So, for example, on Ubuntu run:-
    
    
    
-To play media file types that are unssuported by Chromecast, we need either ffmpeg or avconv installed.
+To play media file types that are unsupported by Chromecast, we need either ffmpeg or avconv installed.
 
 On Ubuntu we can either install avconv:-
 
@@ -74,9 +74,22 @@ Control playback
         stream2chromecast.py -stop  
 
 
+Configuration
+    - set the transcoding quality preset and bitrate
+
+        stream2chromecast.py -set_transcode_quality <preset> <bitrate>       
+    
+        Note: The preset value must be one of:-
+            ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+            The bitrate must be an integer (optionally ending with k) e.g. 2000k
+            
+    - reset the transcoding quality and bitrate to defaults:-
+        stream2chromecast.py -reset_transcode_quality              
+          
+   
 Notes
 -----
-The real-time transcoding is done by ffmpeg (or avconv) using the ultrafast preset. Consequently, the video quality is not as good as it would be if slower presets were used. However, it does allow even modestly powered machines to serve video without buffering.
+The real-time transcoding is done by ffmpeg (or avconv) using the ultrafast preset by default. Consequently, the video quality is not as good as it would be if slower presets were used. However, it does allow even modestly powered machines to serve video without buffering.
 
 avconv is a fork of ffmpeg. It appears that the Ubuntu packagers chose to include avconv in the repositories rather than ffmpeg. However there is a PPA repository available which contains the latest builds of ffmpeg. See the installation notes.
 
@@ -84,7 +97,7 @@ avconv is a fork of ffmpeg. It appears that the Ubuntu packagers chose to includ
 To Do
 -----
     Add stream2chromecast to the "open with" context menu.
-    Add quality control settings for transcoding.
+    Send the correct mime-types. (This doesn't actually appear to matter but it would be better to use the right values) 
     Handle multiple Chromecast devices.
     Automatic identification of media types that need transcoding.
     Set up a proper install procedure.

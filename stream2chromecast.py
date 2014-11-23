@@ -38,20 +38,33 @@ Play an unsupported media type (e.g. an mpg file) using ffmpeg as a realtime tra
     
 Play an unsupported media type (e.g. an mpg file) using avconv as a realtime transcoder (requires avconv installed):-
     %s -avconv <file>    
-        
-""" % ((script_name,) * 6)
+
+Set the transcoder quality preset and bitrate:-
+    %s -set_transcode_quality <preset> <bitrate>       
+    
+    Note: The preset value must be one of:-
+              ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+          The bitrate must be an integer (optionally ending with k) e.g. 2000k
+          
+Reset the transcoder quality to defaults:-
+    %s -reset_transcode_quality  
+""" % ((script_name,) * 8)
+
+
 
 PIDFILE = "/tmp/stream2chromecast.pid"
 
-webserver_ip = None
-webserver_port = 8020
+CONFIGFILE = "~/.stream2chromecast"
+DEFAULTCONFIG = {'ffmpeg_preset':"ultrafast", 'ffmpeg_bitrate':"2000k"}
 
-FFMPEG = 'ffmpeg -i "%s" -preset ultrafast -c:a libfdk_aac -f mp4 -frag_duration 3600 -b:v 2000k -'
-AVCONV = 'avconv -i "%s" -preset ultrafast -c:a aac -f mp4 -frag_duration 3600 -b:v 2000k -strict experimental -'
+WEBSERVERPORT = 8020
+
+FFMPEG = 'ffmpeg -i "%s" -preset %s -c:a libfdk_aac -f mp4 -frag_duration 3600 -b:v %s -'
+AVCONV = 'avconv -i "%s" -preset %s -c:a aac -f mp4 -frag_duration 3600 -b:v %s -strict experimental -'
 
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    """ Handle HTTP requests for mp4 files which do not need transcoding """
+    """ Handle HTTP requests for files which do not need transcoding """
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "video/mp4")
@@ -67,11 +80,14 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 class TranscodingRequestHandler(RequestHandler):
-    """ Handle HTTP requests for non mp4 files which require realtime transcoding with ffmpeg """
+    """ Handle HTTP requests for files which require realtime transcoding with ffmpeg """
     transcoder_command = FFMPEG
                     
     def write_response(self, filepath):
-        ffmpeg_command = self.transcoder_command % filepath #FFMPEG % filepath
+        config = load_config()
+        ffmpeg_command = self.transcoder_command % (filepath, config['ffmpeg_preset'], config['ffmpeg_bitrate']) 
+        
+        print "transcoder command:", ffmpeg_command
         
         ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, shell=True)
 
@@ -80,7 +96,7 @@ class TranscodingRequestHandler(RequestHandler):
 
 
 class AVConvTranscodingRequestHandler(TranscodingRequestHandler):
-    """ Handle HTTP requests for non mp4 files which require realtime transcoding with avconv """
+    """ Handle HTTP requests for files which require realtime transcoding with avconv """
     transcoder_command = AVCONV
 
 
@@ -94,7 +110,65 @@ def is_transcoder_installed(transcoder_application):
         return True
     except OSError:
         return False
+    
         
+        
+def save_transcode_quality(ffmpeg_preset, ffmpeg_bitrate):
+    """ store the transcoding quality preset and bitrate """
+    if not ffmpeg_preset in ("ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow", "placebo"):
+        sys.exit("preset value must be one of: ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo")
+
+    check_bitrate_value = ffmpeg_bitrate
+    if check_bitrate_value.endswith('k') or check_bitrate_value.endswith('m'):
+        check_bitrate_value = check_bitrate_value[:-1]
+        
+    try:
+        int(check_bitrate_value)
+    except ValueError:
+        sys.exit("bitrate must be an integer value optionally ending with k. For example: 2000k")
+        
+        
+    config = load_config()
+    
+    config['ffmpeg_preset'] = ffmpeg_preset
+    config['ffmpeg_bitrate'] = ffmpeg_bitrate
+    
+    save_config(config)
+    
+    
+def load_config():
+    """ load configuration data from the config file """
+    config = DEFAULTCONFIG
+    
+    filepath = os.path.expanduser(CONFIGFILE)
+    print "loading config from: ", filepath    
+    
+    try:
+        with open(filepath, "r") as f:
+            lines = f.read().split("\n")
+            for line in lines:
+                if ":" in line:
+                    name, value = line.split(":")
+                    if name in config.keys():
+                        config[name] = value   
+    except IOError:
+        print "Unable to load config - using defaults"
+        
+    return config
+    
+    
+def save_config(config):
+    """ store configuration data to the config file """
+    filepath = os.path.expanduser(CONFIGFILE)
+
+    try:
+        with open(filepath, "w") as f:
+            for key in config.keys():
+                f.write("%s:%s\n" % (key, config[key]))
+    except IOError:
+        print "Unable to save config."     
+
+
 
 def kill_old_pid():
     """ attempts to kill a previously running instance of this application. """
@@ -133,7 +207,7 @@ def get_chromecast():
             
 def play(filename, transcoder=None):
     """ play a local file on the chromecast """
-    global webserver_ip, webserver_port
+    #global webserver_ip, webserver_port
 
     if os.path.isfile(filename):
         filename = os.path.abspath(filename)
@@ -177,13 +251,13 @@ def play(filename, transcoder=None):
             sys.exit("unable to find avconv (or ffmpeg)")
         
             
-    server = BaseHTTPServer.HTTPServer((webserver_ip, webserver_port), req_handler)
+    server = BaseHTTPServer.HTTPServer((webserver_ip, WEBSERVERPORT), req_handler)
     
     thread = Thread(target=server.handle_request)
     thread.start()    
 
     
-    url = "http://%s:%s%s" % (webserver_ip, str(webserver_port), urllib.quote_plus(filename, "/"))
+    url = "http://%s:%s%s" % (webserver_ip, str(WEBSERVERPORT), urllib.quote_plus(filename, "/"))
     print "Serving media from: ", url
 
 
@@ -219,29 +293,54 @@ def stop():
     cast.quit_app()
 
 
+def validate_args():
+    """ validate that there are the correct number of arguments """
+    if len(sys.argv) < 2:
+        sys.exit(USAGETEXT)
+        
+    arg1 = sys.argv[1]
+    
+    if arg1 in ("-stop", "-pause", "-continue", "-reset_transcode_quality"):
+        return
+    elif arg1 in ("-ffmpeg", "-avconv"):
+        if len(sys.argv) < 3:
+            sys.exit(USAGETEXT) 
+    elif arg1 == "-set_transcode_quality":
+        if len(sys.argv) < 4:
+            sys.exit(USAGETEXT)     
+       
+        
+
 def run():
     """ main execution """
     
-    if len(sys.argv) < 2:
-        sys.exit(USAGETEXT)
+    validate_args()
             
     arg1 = sys.argv[1]
     
     if arg1 == "-stop":
         stop()
+        
     elif arg1 == "-pause":
         pause()        
+    
     elif arg1 == "-continue":
         unpause()           
+    
     elif arg1 in ("-ffmpeg", "-avconv"):
-        if len(sys.argv) < 3:
-            sys.exit(USAGETEXT) 
-
         arg2 = sys.argv[2]  
-        
         play(arg2, transcoder=arg1)   
-    elif arg1 == "-screencast":
-        screencast()                 
+    
+    elif arg1 == "-set_transcode_quality":
+        ffmpeg_preset = sys.argv[2].lower()
+        ffmpeg_bitrate = sys.argv[3].lower()
+        save_transcode_quality(ffmpeg_preset, ffmpeg_bitrate)    
+
+    elif arg1 == "-reset_transcode_quality":
+        ffmpeg_preset = DEFAULTCONFIG['ffmpeg_preset']
+        ffmpeg_bitrate = DEFAULTCONFIG['ffmpeg_bitrate']
+        save_transcode_quality(ffmpeg_preset, ffmpeg_bitrate)                       
+    
     else:
         play(arg1)        
         
