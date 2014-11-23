@@ -88,7 +88,7 @@ To Do
     Handle multiple Chromecast devices.
     Automatic identification of media types that need transcoding.
     Set up a proper install procedure.
-    Think of a better name. There is another project on Sourceforge with the same name - though it appears to be empty. :-(
+
 
 
 Thanks
