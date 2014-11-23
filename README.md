@@ -46,8 +46,7 @@ To stream supported media files to a Chromecast.
 
 
 To transcode and stream unsupported media files to a Chromecast.
-
-    This requires either ffmpeg or avconv to be installed. See Dependencies.
+    (This requires either ffmpeg or avconv to be installed. See Dependencies.)
 
     - for an ffmpeg transcoding:-
 
@@ -61,6 +60,7 @@ To transcode and stream unsupported media files to a Chromecast.
 
 
 Control playback
+
     - pause playback (currently only works when not transcoding)
    
         stream2chromecast.py -pause
@@ -75,6 +75,7 @@ Control playback
 
 
 Configuration
+
     - set the transcoding quality preset and bitrate
 
         stream2chromecast.py -set_transcode_quality <preset> <bitrate>       
