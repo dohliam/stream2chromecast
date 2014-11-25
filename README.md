@@ -97,8 +97,7 @@ avconv is a fork of ffmpeg. It appears that the Ubuntu packagers chose to includ
 
 To Do
 -----
-    Add stream2chromecast to the "open with" context menu.
-    Send the correct mime-types. (This doesn't actually appear to matter but it would be better to use the right values) 
+    Add stream2chromecast to the "open with" context menu. 
     Handle multiple Chromecast devices.
     Automatic identification of media types that need transcoding.
     Set up a proper install procedure.

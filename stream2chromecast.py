@@ -57,17 +57,18 @@ PIDFILE = "/tmp/stream2chromecast.pid"
 CONFIGFILE = "~/.stream2chromecast"
 DEFAULTCONFIG = {'ffmpeg_preset':"ultrafast", 'ffmpeg_bitrate':"2000k"}
 
-WEBSERVERPORT = 8020
 
 FFMPEG = 'ffmpeg -i "%s" -preset %s -c:a libfdk_aac -f mp4 -frag_duration 3600 -b:v %s -'
 AVCONV = 'avconv -i "%s" -preset %s -c:a aac -f mp4 -frag_duration 3600 -b:v %s -strict experimental -'
 
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    content_type = "video/mp4"
+    
     """ Handle HTTP requests for files which do not need transcoding """
     def do_GET(self):
         self.send_response(200)
-        self.send_header("Content-type", "video/mp4")
+        self.send_header("Content-type", self.content_type)
         self.end_headers()
         
         filepath = urllib.unquote_plus(self.path)
@@ -94,10 +95,6 @@ class TranscodingRequestHandler(RequestHandler):
         for line in ffmpeg_process.stdout:
             self.wfile.write(line) 
 
-
-class AVConvTranscodingRequestHandler(TranscodingRequestHandler):
-    """ Handle HTTP requests for files which require realtime transcoding with avconv """
-    transcoder_command = AVCONV
 
 
             
@@ -204,10 +201,55 @@ def get_chromecast():
 
 
 
+def get_mimetype(filename, ffprobe_cmd=None):
+    """ find the container format of the file """
+    # default value
+    mimetype = "video/mp4"
+    
+    if ffprobe_cmd is None:
+        return mimetype
+    
+    has_video = False
+    has_audio = False
+    format_name = None
+    
+    ffprobe_cmd = 'avprobe -show_streams -show_format "%s"' % filename
+    ffmpeg_process = subprocess.Popen(ffprobe_cmd, stdout=subprocess.PIPE, shell=True)
+
+    for line in ffmpeg_process.stdout:
+        if line.startswith("codec_type=audio"):
+            has_audio = True
+        elif line.startswith("codec_type=video"):
+            has_video = True    
+        elif line.startswith("format_name="):
+            name, value = line.split("=")
+            format_name = value.strip().lower().split(",")
+
+    # use the default if it isn't possible to identify the format type
+    if format_name is None:
+        return mimetype
+    
+    if has_video:
+        mimetype = "video/"
+    else:
+        mimetype = "audio/"
+        
+    if "mp4" in format_name:
+        mimetype += "mp4"            
+    elif "webm" in format_name:
+        mimetype += "webm"
+    elif "ogg" in format_name:
+        mimetype += "ogg"        
+    elif "mp3" in format_name:
+        mimetype = "audio/mpeg"
+    elif "wav" in format_name:
+        mimetype = "audio/wav"        
+        
+    return mimetype
+    
             
 def play(filename, transcoder=None):
     """ play a local file on the chromecast """
-    #global webserver_ip, webserver_port
 
     if os.path.isfile(filename):
         filename = os.path.abspath(filename)
@@ -218,6 +260,17 @@ def play(filename, transcoder=None):
     save_pid()
         
     print "Playing: ", filename
+    
+    ffmpeg_installed = is_transcoder_installed("ffmpeg")
+    avprobe_installed = is_transcoder_installed("avconv")
+    
+    ffprobe_cmd = None
+    if ffmpeg_installed:
+        ffprobe_cmd = "ffprobe"
+    elif avprobe_installed:
+        ffprobe_cmd = "avprobe"
+        
+    mimetype = get_mimetype(filename, ffprobe_cmd)
     
     cast = get_chromecast()
     
@@ -231,37 +284,41 @@ def play(filename, transcoder=None):
         
     
     req_handler = RequestHandler
+    req_handler.content_type = mimetype
     
     if transcoder == "-ffmpeg":
-        if is_transcoder_installed("ffmpeg"):
-            req_handler = TranscodingRequestHandler
-        elif is_transcoder_installed("avconv"):
+        req_handler = TranscodingRequestHandler
+        if ffmpeg_installed:
+            req_handler.transcoder_command = FFMPEG
+        elif avprobe_installed:
             print "unable to find ffmpeg - using avconv"
-            req_handler = AVConvTranscodingRequestHandler
+            req_handler.transcoder_command = AVCONV
         else:
             sys.exit("unable to find ffmpeg (or avconv)")
             
     elif transcoder == "-avconv":
-        if is_transcoder_installed("avconv"):
-            req_handler = AVConvTranscodingRequestHandler
-        elif is_transcoder_installed("ffmpeg"):
+        req_handler = TranscodingRequestHandler
+        if avprobe_installed:
+            req_handler.transcoder_command = AVCONV
+        elif ffmpeg_installed:
             print "unable to find avconv - using ffmpeg"
-            req_handler = TranscodingRequestHandler
+            req_handler.transcoder_command = FFMPEG
         else:
             sys.exit("unable to find avconv (or ffmpeg)")
         
-            
-    server = BaseHTTPServer.HTTPServer((webserver_ip, WEBSERVERPORT), req_handler)
+    
+    # create a webserver to handle a single request on a free port        
+    server = BaseHTTPServer.HTTPServer((webserver_ip, 0), req_handler)
     
     thread = Thread(target=server.handle_request)
     thread.start()    
 
     
-    url = "http://%s:%s%s" % (webserver_ip, str(WEBSERVERPORT), urllib.quote_plus(filename, "/"))
+    url = "http://%s:%s%s" % (webserver_ip, str(server.server_port), urllib.quote_plus(filename, "/"))
     print "Serving media from: ", url
 
 
-    cast.play_media(url, "video/mp4") 
+    cast.play_media(url, mimetype) 
     
     
 
