@@ -51,38 +51,38 @@ To transcode and stream unsupported media files to a Chromecast.
 
 Control playback
 
-    - pause playback (currently only works when not transcoding)
+ - pause playback (currently only works when not transcoding)
    
         stream2chromecast.py -pause
        
-    - continue (unpause) playback (currently only works when not transcoding)
+ - continue (unpause) playback (currently only works when not transcoding)
    
         stream2chromecast.py -continue
        
-    - stop playback
+ - stop playback
    
         stream2chromecast.py -stop  
 
 
 Configuration
 
-    - set the preferred transcoder (if both ffmpeg and avconv are installed)
+ - set the preferred transcoder (if both ffmpeg and avconv are installed)
     
         stream2chromecast.py -set_transcoder <transcoder command>
         
-    The transcoder command value mst be one of ffmpeg or avconv
+ The transcoder command value mst be one of ffmpeg or avconv
     
 
-    - set the transcoding quality preset and bitrate
+ - set the transcoding quality preset and bitrate
 
         stream2chromecast.py -set_transcode_quality <preset> <bitrate>       
     
-    The preset value must be one of:-
-      ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
-      The bitrate must be an integer (optionally ending with k) e.g. 2000k
+ The preset value must be one of:-
+   ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+ The bitrate must be an integer (optionally ending with k) e.g. 2000k
       
             
-    - reset the transcoding quality and bitrate to defaults:-
+ - reset the transcoding quality and bitrate to defaults:-
         stream2chromecast.py -reset_transcode_quality              
           
    
