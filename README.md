@@ -40,7 +40,7 @@ Functionality
 -------------
 To stream supported media files to a Chromecast.
 
-    stream2chromecast.py my_media.mp4
+        stream2chromecast.py my_media.mp4
 
 
 To transcode and stream unsupported media files to a Chromecast.
@@ -78,7 +78,8 @@ Configuration
         stream2chromecast.py -set_transcode_quality <preset> <bitrate>       
     
  The preset value must be one of:-
-   ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+   ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo.
+   
  The bitrate must be an integer (optionally ending with k) e.g. 2000k
       
             
@@ -90,7 +91,7 @@ Notes
 -----
 The real-time transcoding is done by ffmpeg (or avconv) using the ultrafast preset by default. Consequently, the video quality is not as good as it would be if slower presets were used. However, it does allow even modestly powered machines to serve video without buffering.
 
-avconv is a fork of ffmpeg. It appears that the Ubuntu packagers chose to include avconv in the repositories rather than ffmpeg. However there is a PPA repository available which contains the latest builds of ffmpeg. See the installation notes.
+avconv is a fork of ffmpeg. It appears that the Ubuntu packagers included avconv in the repositories rather than ffmpeg. However there is a PPA repository available which contains the latest builds of ffmpeg. See the installation notes.
 
 
 To Do
