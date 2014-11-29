@@ -89,7 +89,7 @@ Configuration
    
 Notes
 -----
-The real-time transcoding is done by ffmpeg (or avconv) using the ultrafast preset by default. Consequently, the video quality is not as good as it would be if slower presets were used. However, it does allow even modestly powered machines to serve video without buffering.
+The real-time transcoding is done by ffmpeg (or avconv) using the ultrafast preset by default. Consequently, by default, the video quality is not as good as it would be if slower presets were used. However, it does allow even modestly powered machines to serve video without buffering. The transcoding preset and bitrate can be adjusted using the "set_transcode_quality" function to improve the quality on more highly powered processors.
 
 avconv is a fork of ffmpeg. It appears that the Ubuntu packagers included avconv in the repositories rather than ffmpeg. However there is a PPA repository available which contains the latest builds of ffmpeg. See the installation notes.
 
