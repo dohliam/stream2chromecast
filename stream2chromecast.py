@@ -24,27 +24,36 @@ Usage
 Play a file:-
     %s <file>
 
+
 Pause the current file:-
     %s -pause
 
+
 Continue (un-pause) the current file:-
     %s -continue
+
         
 Stop the current file playing:-
     %s -stop
-    
-Play an unsupported media type (e.g. an mpg file) using ffmpeg as a realtime transcoder (requires ffmpeg installed):-
-    %s -ffmpeg <file>
-    
-Play an unsupported media type (e.g. an mpg file) using avconv as a realtime transcoder (requires avconv installed):-
-    %s -avconv <file>    
 
+    
+Play an unsupported media type (e.g. an mpg file) using ffmpeg or avconv as a realtime transcoder (requires ffmpeg or avconv to be installed):-
+    %s -transcode <file>   
+
+
+Set the preferred transcoder command (if both ffmpeg and avconv are installed):-
+    %s -set_transcoder <transcoder command>
+    
+    Note: the transcoder command must be one of "ffmpeg" or "avconv"
+
+    
 Set the transcoder quality preset and bitrate:-
     %s -set_transcode_quality <preset> <bitrate>       
     
     Note: The preset value must be one of:-
               ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
           The bitrate must be an integer (optionally ending with k) e.g. 2000k
+
           
 Reset the transcoder quality to defaults:-
     %s -reset_transcode_quality  
@@ -53,9 +62,10 @@ Reset the transcoder quality to defaults:-
 
 
 PIDFILE = "/tmp/stream2chromecast.pid"
+FFMPEGPIDFILE = "/tmp/stream2chromecast_ffmpeg.pid"
 
 CONFIGFILE = "~/.stream2chromecast"
-DEFAULTCONFIG = {'ffmpeg_preset':"ultrafast", 'ffmpeg_bitrate':"2000k"}
+DEFAULTCONFIG = {'transcoder':"ffmpeg", 'ffmpeg_preset':"ultrafast", 'ffmpeg_bitrate':"2000k"}
 
 
 FFMPEG = 'ffmpeg -i "%s" -preset %s -c:a libfdk_aac -f mp4 -frag_duration 3600 -b:v %s -'
@@ -88,9 +98,7 @@ class TranscodingRequestHandler(RequestHandler):
         config = load_config()
         ffmpeg_command = self.transcoder_command % (filepath, config['ffmpeg_preset'], config['ffmpeg_bitrate']) 
         
-        print "transcoder command:", ffmpeg_command
-        
-        ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, shell=True)
+        ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, shell=True)       
 
         for line in ffmpeg_process.stdout:
             self.wfile.write(line) 
@@ -98,7 +106,39 @@ class TranscodingRequestHandler(RequestHandler):
 
 
             
+def get_transcoder_cmds():
+    """ establish which transcoder utility to use depending on what is installed """
+    probe_cmd = None
+    transcoder_cmd = None
+    
+    config = load_config()
+    preferred_transcoder = config['transcoder']
+    
+    ffmpeg_installed = is_transcoder_installed("ffmpeg")
+    avconv_installed = is_transcoder_installed("avconv")  
+        
+    if preferred_transcoder == "ffmpeg":
+        if ffmpeg_installed:
+            transcoder_cmd = "ffmpeg"
+            probe_cmd = "ffprobe"
+        elif avprobe_installed:
+            print "unable to find ffmpeg - using avconv"
+            transcoder_cmd = "avconv"
+            probe_cmd = "avprobe"
+      
+    elif preferred_transcoder == "avconv":
+        if avconv_installed:
+            transcoder_cmd = "avconv"
+            probe_cmd = "avprobe"
+        elif ffmpeg_installed:
+            print "unable to find avconv - using ffmpeg"
+            transcoder_cmd = "ffmpeg"
+            probe_cmd = "ffprobe"
             
+    return transcoder_cmd, probe_cmd
+    
+    
+                
 
 def is_transcoder_installed(transcoder_application):
     """ check for an installation of either ffmpeg or avconv """
@@ -109,7 +149,21 @@ def is_transcoder_installed(transcoder_application):
         return False
     
         
+def save_transcoder(preferred_transcoder):
+    """ save the preferred transcoder command: ffmpeg or avconv """
+    if not preferred_transcoder in ("ffmpeg", "avconv"):
+        sys.exit("transcoder command must be either ffmpeg or avconv")
         
+    config = load_config()
+    
+    config['transcoder'] = preferred_transcoder
+    
+    save_config(config)
+    
+    print "transcoder set to", preferred_transcoder
+    
+    
+                 
 def save_transcode_quality(ffmpeg_preset, ffmpeg_bitrate):
     """ store the transcoding quality preset and bitrate """
     if not ffmpeg_preset in ("ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow", "placebo"):
@@ -138,7 +192,6 @@ def load_config():
     config = DEFAULTCONFIG
     
     filepath = os.path.expanduser(CONFIGFILE)
-    print "loading config from: ", filepath    
     
     try:
         with open(filepath, "r") as f:
@@ -149,7 +202,7 @@ def load_config():
                     if name in config.keys():
                         config[name] = value   
     except IOError:
-        print "Unable to load config - using defaults"
+        pass
         
     return config
     
@@ -172,7 +225,7 @@ def kill_old_pid():
     try:
         with open(PIDFILE, "r") as pidfile:
             pid = int(pidfile.read())
-            os.kill(pid, signal.SIGTERM)    
+            os.killpg(pid, signal.SIGTERM)    
     except:
         pass
                
@@ -213,7 +266,7 @@ def get_mimetype(filename, ffprobe_cmd=None):
     has_audio = False
     format_name = None
     
-    ffprobe_cmd = 'avprobe -show_streams -show_format "%s"' % filename
+    ffprobe_cmd = '%s -show_streams -show_format "%s"' % (ffprobe_cmd, filename)
     ffmpeg_process = subprocess.Popen(ffprobe_cmd, stdout=subprocess.PIPE, shell=True)
 
     for line in ffmpeg_process.stdout:
@@ -243,34 +296,30 @@ def get_mimetype(filename, ffprobe_cmd=None):
     elif "mp3" in format_name:
         mimetype = "audio/mpeg"
     elif "wav" in format_name:
-        mimetype = "audio/wav"        
+        mimetype = "audio/wav" 
+    else:   
+        mimetype += "mp4"     
         
     return mimetype
     
             
-def play(filename, transcoder=None):
+def play(filename, transcode=False):
     """ play a local file on the chromecast """
 
     if os.path.isfile(filename):
         filename = os.path.abspath(filename)
     else:
-        sys.exit("media file not found")
+        sys.exit("media file %s not found" % filename)
         
+
     kill_old_pid()
     save_pid()
         
     print "Playing: ", filename
     
-    ffmpeg_installed = is_transcoder_installed("ffmpeg")
-    avprobe_installed = is_transcoder_installed("avconv")
-    
-    ffprobe_cmd = None
-    if ffmpeg_installed:
-        ffprobe_cmd = "ffprobe"
-    elif avprobe_installed:
-        ffprobe_cmd = "avprobe"
+    transcoder_cmd, probe_cmd = get_transcoder_cmds()
         
-    mimetype = get_mimetype(filename, ffprobe_cmd)
+    mimetype = get_mimetype(filename, probe_cmd)
     
     cast = get_chromecast()
     
@@ -286,26 +335,13 @@ def play(filename, transcoder=None):
     req_handler = RequestHandler
     req_handler.content_type = mimetype
     
-    if transcoder == "-ffmpeg":
-        req_handler = TranscodingRequestHandler
-        if ffmpeg_installed:
+    if transcode:
+        if transcoder_cmd == "ffmpeg":  
+            req_handler = TranscodingRequestHandler
             req_handler.transcoder_command = FFMPEG
-        elif avprobe_installed:
-            print "unable to find ffmpeg - using avconv"
+        elif transcoder_cmd == "avconv":   
+            req_handler = TranscodingRequestHandler
             req_handler.transcoder_command = AVCONV
-        else:
-            sys.exit("unable to find ffmpeg (or avconv)")
-            
-    elif transcoder == "-avconv":
-        req_handler = TranscodingRequestHandler
-        if avprobe_installed:
-            req_handler.transcoder_command = AVCONV
-        elif ffmpeg_installed:
-            print "unable to find avconv - using ffmpeg"
-            req_handler.transcoder_command = FFMPEG
-        else:
-            sys.exit("unable to find avconv (or ffmpeg)")
-        
     
     # create a webserver to handle a single request on a free port        
     server = BaseHTTPServer.HTTPServer((webserver_ip, 0), req_handler)
@@ -359,7 +395,7 @@ def validate_args():
     
     if arg1 in ("-stop", "-pause", "-continue", "-reset_transcode_quality"):
         return
-    elif arg1 in ("-ffmpeg", "-avconv"):
+    elif arg1 in ("-set_transcoder"):
         if len(sys.argv) < 3:
             sys.exit(USAGETEXT) 
     elif arg1 == "-set_transcode_quality":
@@ -384,10 +420,14 @@ def run():
     elif arg1 == "-continue":
         unpause()           
     
-    elif arg1 in ("-ffmpeg", "-avconv"):
+    elif arg1 in ("-transcode"):    
         arg2 = sys.argv[2]  
-        play(arg2, transcoder=arg1)   
-    
+        play(arg2, transcode=True)   
+
+    elif arg1 == "-set_transcoder":
+        transcoder = sys.argv[2].lower()
+        save_transcoder(transcoder) 
+            
     elif arg1 == "-set_transcode_quality":
         ffmpeg_preset = sys.argv[2].lower()
         ffmpeg_bitrate = sys.argv[3].lower()

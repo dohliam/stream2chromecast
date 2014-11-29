@@ -22,7 +22,7 @@ So, for example, on Ubuntu run:-
    
    
    
-To play media file types that are unsupported by Chromecast, we need either ffmpeg or avconv installed.
+To play media file types that are unsupported by Chromecast, we need either ffmpeg or avconv installed to do the transcoding.
 
 On Ubuntu we can either install avconv:-
 
@@ -43,20 +43,10 @@ To stream supported media files to a Chromecast.
     stream2chromecast.py my_media.mp4
 
 
-
-
 To transcode and stream unsupported media files to a Chromecast.
     (This requires either ffmpeg or avconv to be installed. See Dependencies.)
 
-    - for an ffmpeg transcoding:-
-
-        stream2chromecast.py -ffmpeg my_mpeg_file.mpg
-
-    - for an avconv transcoding:-
-
-        stream2chromecast.py -avconv my_mpeg_file.mpg
-
-
+        stream2chromecast.py -transcode my_mpeg_file.mpg
 
 
 Control playback
@@ -76,13 +66,21 @@ Control playback
 
 Configuration
 
+    - set the preferred transcoder (if both ffmpeg and avconv are installed)
+    
+        stream2chromecast.py -set_transcoder <transcoder command>
+        
+    The transcoder command value mst be one of ffmpeg or avconv
+    
+
     - set the transcoding quality preset and bitrate
 
         stream2chromecast.py -set_transcode_quality <preset> <bitrate>       
     
-        Note: The preset value must be one of:-
-            ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
-            The bitrate must be an integer (optionally ending with k) e.g. 2000k
+    The preset value must be one of:-
+      ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+      The bitrate must be an integer (optionally ending with k) e.g. 2000k
+      
             
     - reset the transcoding quality and bitrate to defaults:-
         stream2chromecast.py -reset_transcode_quality              
@@ -102,6 +100,12 @@ To Do
     Automatic identification of media types that need transcoding.
     Set up a proper install procedure.
 
+
+License
+-------
+stream2chromecast.py is GPLv3 licensed.
+
+It depends on the PyChromecast library which is MIT licensed - see https://github.com/balloob/pychromecast
 
 
 Thanks
