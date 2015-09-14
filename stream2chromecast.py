@@ -121,7 +121,7 @@ def get_transcoder_cmds():
         if ffmpeg_installed:
             transcoder_cmd = "ffmpeg"
             probe_cmd = "ffprobe"
-        elif avprobe_installed:
+        elif avconv_installed:
             print "unable to find ffmpeg - using avconv"
             transcoder_cmd = "avconv"
             probe_cmd = "avprobe"
