@@ -386,6 +386,20 @@ def stop():
     cast.quit_app()
 
 
+def get_status():
+    """ print the status of the chromecast device """
+    cast = pychromecast.get_chromecast()
+
+    time.sleep(1)
+    print
+    print cast.device
+    print
+    print cast.status
+    print
+    print cast.media_controller.status
+    print
+
+
 def validate_args():
     """ validate that there are the correct number of arguments """
     if len(sys.argv) < 2:
@@ -420,6 +434,9 @@ def run():
     elif arg1 == "-continue":
         unpause()           
     
+    elif arg1 == "-status":
+        get_status()
+
     elif arg1 in ("-transcode"):    
         arg2 = sys.argv[2]  
         play(arg2, transcode=True)   
