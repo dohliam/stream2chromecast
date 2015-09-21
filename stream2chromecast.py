@@ -386,6 +386,45 @@ def stop():
     cast.quit_app()
 
 
+def get_status():
+    """ print the status of the chromecast device """
+    cast = pychromecast.get_chromecast()
+
+    time.sleep(1)
+    print
+    print cast.device
+    print
+    print cast.status
+    print
+    print cast.media_controller.status
+    print
+
+
+def volume_up():
+    """ raise the volume by 0.1 """
+    cast = get_chromecast()
+
+    cast.volume_up()
+    time.sleep(3)
+
+
+def volume_down():
+    """ lower the volume by 0.1 """
+    cast = get_chromecast()
+
+    cast.volume_down()
+    time.sleep(3)
+
+
+def set_volume(v):
+    """ set the volume to level between 0 and 1 """
+    cast = get_chromecast()
+
+    cast.set_volume(v)
+    time.sleep(3)
+
+
+
 def validate_args():
     """ validate that there are the correct number of arguments """
     if len(sys.argv) < 2:
@@ -420,6 +459,22 @@ def run():
     elif arg1 == "-continue":
         unpause()           
     
+    elif arg1 == "-status":
+        get_status()
+
+    elif arg1 == "-setvol":
+        arg2 = float(sys.argv[2])
+        set_volume(arg2)
+
+    elif arg1 == "-volup":
+        volume_up()
+
+    elif arg1 == "-voldown":
+        volume_down()
+
+    elif arg1 == "-mute":
+        set_volume(0)
+
     elif arg1 in ("-transcode"):    
         arg2 = sys.argv[2]  
         play(arg2, transcode=True)   
