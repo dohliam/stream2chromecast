@@ -36,7 +36,20 @@ Continue (un-pause) the current file:-
 Stop the current file playing:-
     %s -stop
 
+
+Set the volume to a value between 0 & 1.0  (e.g. 0.5 = half volume):-
+    %s -setvol <volume>
+
+
+Adjust the volume up or down by 0.1:-
+    %s -volup
+    %s -voldown
     
+
+Mute the volume:-
+    %s -mute
+    
+           
 Play an unsupported media type (e.g. an mpg file) using ffmpeg or avconv as a realtime transcoder (requires ffmpeg or avconv to be installed):-
     %s -transcode <file>   
 
@@ -57,7 +70,11 @@ Set the transcoder quality preset and bitrate:-
           
 Reset the transcoder quality to defaults:-
     %s -reset_transcode_quality  
-""" % ((script_name,) * 8)
+    
+    
+Display Chromecast status:
+    %s -status    
+""" % ((script_name,) * 13)
 
 
 
