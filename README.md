@@ -64,6 +64,22 @@ Control playback
         stream2chromecast.py -stop  
 
 
+Volume control
+
+ - set volume (takes a value between 0.0 and 1.0)
+
+        stream2chromecast.py -setvol <volume>
+
+ - increase or decrease volume by 0.1
+ 
+        stream2chromecast.py -volup
+        stream2chromecast.py -voldown
+        
+ - mute volume
+
+        stream2chromecast.py -mute
+        
+
 Configuration
 
  - set the preferred transcoder (if both ffmpeg and avconv are installed)
@@ -86,7 +102,13 @@ Configuration
  - reset the transcoding quality and bitrate to defaults:-
         stream2chromecast.py -reset_transcode_quality              
           
-   
+Status
+
+ - get Chromecast status
+
+        stream2chromecast.py -status
+        
+        
 Notes
 -----
 The real-time transcoding is done by ffmpeg (or avconv) using the ultrafast preset by default. Consequently, by default, the video quality is not as good as it would be if slower presets were used. However, it does allow even modestly powered machines to serve video without buffering. The transcoding preset and bitrate can be adjusted using the "set_transcode_quality" function to improve the quality on more highly powered processors.
@@ -112,3 +134,5 @@ It depends on the PyChromecast library which is MIT licensed - see https://githu
 Thanks
 ------
 This project uses the PyChromecast library by Paulus Schoutsen to do the difficult bits.
+
+Thanks to [dohliam](https://github.com/dohliam) for bug fixes and additional functionality.
