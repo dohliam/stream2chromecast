@@ -97,8 +97,8 @@ N.B. The Chromecast caches around a minute of media before playing it. This mean
 So, if we then played a second file without the -enqueue parameter, it would terminate the first one about a minute before the end.
 
 For example, imagine a script that plays a list of music videos by running stream2chromecast on each one.
-The first instance of the command would complete around a minute before the end of the first video.
-The next command would use the -enqueue parameter to wait for the first video to complete playback before starting.
+The first instance of the command would complete around a minute before the end of the first video's playback.
+The next command should use the -enqueue parameter to wait for the first video to complete playback before starting.
 
 
 ###Configuration
@@ -121,6 +121,7 @@ The next command would use the -enqueue parameter to wait for the first video to
       
             
  - reset the transcoding quality and bitrate to defaults:-
+ 
         stream2chromecast.py -reset_transcode_quality              
           
 ###Status
