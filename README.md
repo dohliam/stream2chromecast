@@ -80,27 +80,6 @@ To transcode and stream unsupported media files to a Chromecast.
         stream2chromecast.py -mute
         
 
-###Enqueuing & caching.
-
-By default, playing a media file will not wait for the Chromecast to become idle before playing.
-To wait for the Chromecast to finish playing its current media before starting the next one, use the -enqueue parameter.
-
- - enqueue a supported media file
- 
-        stream2chromecast.py -enqueue my_media.mp4
-        
- - enqueue and transcode an unsupported media file 
-
-        stream2chromecast.py -enqueue -transcode my_mpeg_file.mpg
-        
-N.B. The Chromecast caches around a minute of media before playing it. This means that the stream2chromecast command completes significantly before the end of media being played.
-So, if we then played a second file without the -enqueue parameter, it would terminate the first one about a minute before the end.
-
-For example, imagine a script that plays a list of music videos by running stream2chromecast on each one.
-The first instance of the command would complete around a minute before the end of the first video's playback.
-The next command should use the -enqueue parameter to wait for the first video to complete playback before starting.
-
-
 ###Configuration
 
  - set the preferred transcoder (if both ffmpeg and avconv are installed)

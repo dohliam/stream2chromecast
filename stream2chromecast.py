@@ -59,10 +59,6 @@ Mute the volume:-
            
 Play an unsupported media type (e.g. an mpg file) using ffmpeg or avconv as a realtime transcoder (requires ffmpeg or avconv to be installed):-
     %s -transcode <file> 
-    
-    
-Enqueue an unsupported media type:-  
-    %s -enqueue -transcode <file>
 
 
 Set the preferred transcoder command (if both ffmpeg and avconv are installed):-
@@ -85,7 +81,7 @@ Reset the transcoder quality to defaults:-
     
 Display Chromecast status:
     %s -status    
-""" % ((script_name,) * 15)
+""" % ((script_name,) * 14)
 
 
 
@@ -332,7 +328,7 @@ def get_mimetype(filename, ffprobe_cmd=None):
     
             
             
-def play(filename, transcode=False, enqueue=False):
+def play(filename, transcode=False):
     """ play a local file on the chromecast """
 
     if os.path.isfile(filename):
@@ -356,17 +352,10 @@ def play(filename, transcode=False, enqueue=False):
     print "my ip address: ", webserver_ip
     
 
-    if enqueue:
-        # if enqueue mode is specified, wait for IDLE status before playing
-        while cast.media_controller.status is not None and cast.media_controller.status.player_state != u"IDLE":
-            print "waiting..."
-            time.sleep(1)  
-    else:   
-        # kill any currently playing app 
-        if not cast.is_idle:
-            print "Killing current running app"
-            cast.quit_app()
-            time.sleep(5)
+    if not cast.is_idle:
+        print "Killing current running app"
+        cast.quit_app()
+        time.sleep(5)
         
     
     req_handler = RequestHandler
@@ -392,8 +381,17 @@ def play(filename, transcode=False, enqueue=False):
 
 
     cast.play_media(url, mimetype) 
+
     
+    # wait for playback to start
+    print "waiting for player to start..."
+    while cast.media_controller.status is None:
+        time.sleep(1)
     
+    # wait for playback to complete before exiting
+    print "waiting for player to finish..."    
+    while cast.media_controller.status is not None and cast.media_controller.status.player_state != u"IDLE":
+        time.sleep(1) 
 
     
     
@@ -478,24 +476,11 @@ def validate_args():
             sys.exit(USAGETEXT)     
 
 
-
-def get_enqueue_parameter():
-    """ if the first parameter sets enqueue mode, remove it from the parameter list and return True """
-    enqueue = False
-    
-    if len(sys.argv) > 1 and sys.argv[1] == "-enqueue":
-        enqueue = True
-        del(sys.argv[1])
-        
-    return enqueue
                
         
 
 def run():
     """ main execution """
-    
-    # enqueue mode - wait for the chromecast to go into IDLE status before playing.
-    enqueue_mode = get_enqueue_parameter()
     
     validate_args()
             
@@ -528,7 +513,7 @@ def run():
 
     elif arg1 in ("-transcode"):    
         arg2 = sys.argv[2]  
-        play(arg2, transcode=True, enqueue=enqueue_mode)   
+        play(arg2, transcode=True)   
 
     elif arg1 == "-set_transcoder":
         transcoder = sys.argv[2].lower()
@@ -545,7 +530,7 @@ def run():
         save_transcode_quality(ffmpeg_preset, ffmpeg_bitrate)                       
     
     else:
-        play(arg1, enqueue=enqueue_mode)        
+        play(arg1)        
         
             
 if __name__ == "__main__":
