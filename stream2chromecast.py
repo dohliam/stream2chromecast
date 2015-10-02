@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 """
 stream2chromecast.py: Chromecast media streamer for Linux
-version 0.12
 
-:-)
+version 0.3
+
+=:-)
 
 """
 import sys, os
 import signal
-import pychromecast
+
+from cc_media_controller import CCMediaController
 import time
 
 import BaseHTTPServer
@@ -259,22 +261,7 @@ def save_pid():
     """ saves the process id of this application in a pid file. """
     with open(PIDFILE, "w") as pidfile:
         pidfile.write("%d" %  os.getpid())
-           
 
-def get_chromecast():
-    """ create an instance of the chromecast device """
-    cast = pychromecast.get_chromecast()
-
-    time.sleep(1)
-    print    
-    print cast.device
-    print
-    print cast.status
-    print
-    print cast.media_controller.status
-    print    
-    
-    return cast
 
 
 
@@ -345,17 +332,13 @@ def play(filename, transcode=False):
     transcoder_cmd, probe_cmd = get_transcoder_cmds()
         
     mimetype = get_mimetype(filename, probe_cmd)
-    
-    cast = get_chromecast()
-    
-    webserver_ip = cast.socket_client.socket.getsockname()[0]
-    print "my ip address: ", webserver_ip
-    
 
-    if not cast.is_idle:
-        print "Killing current running app"
-        cast.quit_app()
-        time.sleep(5)
+    
+    cast = CCMediaController()
+    status = cast.get_status()
+    webserver_ip = status['client'][0]
+    
+    print "my ip address: ", webserver_ip
         
     
     req_handler = RequestHandler
@@ -380,84 +363,49 @@ def play(filename, transcode=False):
     print "Serving media from: ", url
 
 
-    cast.play_media(url, mimetype) 
-
-    
-    # wait for playback to start
-    print "waiting for player to start..."
-    while cast.media_controller.status is None:
-        time.sleep(1)
+    cast.load(url, mimetype)
     
     # wait for playback to complete before exiting
     print "waiting for player to finish..."    
-    while cast.media_controller.status is not None and cast.media_controller.status.player_state != u"IDLE":
-        time.sleep(1) 
 
+    idle = False
+    while not idle:
+        time.sleep(1)
+        idle = cast.is_idle()
     
     
 def pause():
     """ pause playback """
-    cast = get_chromecast()
-
-    cast.media_controller.pause()
-    time.sleep(3)
+    CCMediaController().pause()
 
 
 def unpause():
     """ continue playback """
-    cast = get_chromecast()
-
-    cast.media_controller.play()
-    time.sleep(3)    
+    CCMediaController().play()    
 
         
 def stop():
     """ stop playback and quit the media player app on the chromecast """
-    cast = get_chromecast()
-
-    cast.media_controller.stop()
-    time.sleep(3)
-    
-    cast.quit_app()
+    CCMediaController().stop()
 
 
 def get_status():
     """ print the status of the chromecast device """
-    cast = pychromecast.get_chromecast()
-
-    time.sleep(1)
-    print
-    print cast.device
-    print
-    print cast.status
-    print
-    print cast.media_controller.status
-    print
-
+    print CCMediaController().get_status()
 
 def volume_up():
     """ raise the volume by 0.1 """
-    cast = get_chromecast()
-
-    cast.volume_up()
-    time.sleep(3)
+    CCMediaController().set_volume_up()
 
 
 def volume_down():
     """ lower the volume by 0.1 """
-    cast = get_chromecast()
-
-    cast.volume_down()
-    time.sleep(3)
+    CCMediaController().set_volume_down()
 
 
 def set_volume(v):
     """ set the volume to level between 0 and 1 """
-    cast = get_chromecast()
-
-    cast.set_volume(v)
-    time.sleep(3)
-
+    CCMediaController().set_volume(v)
 
 
 def validate_args():

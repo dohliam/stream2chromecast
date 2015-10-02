@@ -7,21 +7,13 @@ Stream2Chromecast casts media files to a Chromecast device from Linux.
 
 It will also transcode any unsupported files in real time and play them on the Chromecast.
 
-It is written in Python 2.7 and uses the PyChromecast library to control the device: https://github.com/balloob/pychromecast (Thanks Paulus!)
+It is written in Python 2.7 and uses either ffmpeg or avconv for transcoding functionality.
 
 
 
 
 Installation
 ------------
-We need the python packages requests and protobuf installed.
-
-So, for example, on Ubuntu run:-
-
-    sudo apt-get install python-protobuf python-requests
-   
-   
-   
 To play media file types that are unsupported by Chromecast, we need either ffmpeg or avconv installed to do the transcoding.
 
 On Ubuntu we can either install avconv:-
@@ -127,11 +119,18 @@ License
 -------
 stream2chromecast.py is GPLv3 licensed.
 
-It depends on the PyChromecast library which is MIT licensed - see https://github.com/balloob/pychromecast
 
 
 Thanks
 ------
-This project uses the PyChromecast library by Paulus Schoutsen to do the difficult bits.
+The excellent PyChromecast library by Paulus Schoutsen has been a great help for information on building the interface.
+
+https://github.com/balloob/pychromecast
+
+
+Thanks to TheCrazyT for this gist:-
+
+https://gist.github.com/TheCrazyT/11263599
+
 
 Thanks to [dohliam](https://github.com/dohliam) for bug fixes and additional functionality.
