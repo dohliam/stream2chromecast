@@ -15,6 +15,7 @@ import time
 
 import BaseHTTPServer
 import urllib
+import mimetypes
 from threading import Thread
 
 import subprocess
@@ -270,9 +271,33 @@ def get_mimetype(filename, ffprobe_cmd=None):
     # default value
     mimetype = "video/mp4"
     
+    
+    # guess based on filename extension
+    guess = mimetypes.guess_type(filename)[0].lower()
+    if guess is not None:
+        if guess.startswith("video/") or guess.startswith("audio/"):
+            mimetype = guess
+      
+        
+    # use the OS file command...
+    try:
+        file_cmd = 'file --mime-type -b "%s"' % filename
+        file_mimetype = subprocess.check_output(file_cmd, shell=True).strip().lower()
+        
+        if file_mimetype.startswith("video/") or file_mimetype.startswith("audio/"):
+            mimetype = file_mimetype
+            
+            print "OS identifies the mimetype as :", mimetype
+            return mimetype
+    except:
+        pass
+    
+    
+    # use ffmpeg/avconv if installed
     if ffprobe_cmd is None:
         return mimetype
     
+    # ffmpeg/avconv is installed
     has_video = False
     has_audio = False
     format_name = None
@@ -289,9 +314,11 @@ def get_mimetype(filename, ffprobe_cmd=None):
             name, value = line.split("=")
             format_name = value.strip().lower().split(",")
 
+
     # use the default if it isn't possible to identify the format type
     if format_name is None:
         return mimetype
+    
     
     if has_video:
         mimetype = "video/"
