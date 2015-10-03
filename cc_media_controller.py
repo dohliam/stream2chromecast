@@ -83,7 +83,12 @@ class CCMediaController():
        
         message_dict = cc_message.extract_message(data)
         
-        message = json.loads(message_dict['data'])
+        message = {}
+        
+        try:
+            message = json.loads(message_dict['data'])
+        except:
+            pass
         
         #print message_dict['namespace']
         #print json.dumps(message, indent=4, separators=(',', ': '))
@@ -95,8 +100,10 @@ class CCMediaController():
     def get_response(self, request_id):
         """ get the response matching the original request id """
         
-        resp = None
-        while resp is None:
+        resp = {}
+        
+        count = 0
+        while len(resp) == 0:
             msg = self.read_message()
             
             msg_type = msg.get("type", msg.get("responseType", ""))
@@ -105,6 +112,12 @@ class CCMediaController():
                 data = {"type":"PONG"}
                 namespace = "urn:x-cast:com.google.cast.tp.heartbeat"
                 self.send_data(namespace, data) 
+                
+                # if 2 ping/pong messages are received without a response to the request_id, 
+                # assume no response is coming
+                count += 1
+                if count == 2:
+                    return resp
                 
             elif msg_type == "RECEIVER_STATUS":
                 self.update_receiver_status_data(msg)
@@ -204,7 +217,7 @@ class CCMediaController():
         if self.receiver_app_status is None:
             data = {"type":"LAUNCH","appId":MEDIAPLAYER_APPID}
             namespace = "urn:x-cast:com.google.cast.receiver"
-            resp = self.send_msg_with_response(namespace, data)
+            self.send_msg_with_response(namespace, data)
             
             # if there is still no receiver app status the launch failed.
             if self.receiver_app_status is None:
@@ -277,7 +290,7 @@ class CCMediaController():
         data.update(parameters)  # for additional parameters
         
         namespace = "urn:x-cast:com.google.cast.media"
-        resp = self.send_msg_with_response(namespace, data)
+        self.send_msg_with_response(namespace, data)
         
         self.close_socket()
                        
