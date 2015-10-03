@@ -29,10 +29,6 @@ Usage
 
 Play a file:-
     %s <file>
-
-
-Enqueue a file (wait for the Chromecast player to be idle before playing):-
-    %s -enqueue <file>
     
 
 Pause the current file:-
@@ -84,7 +80,7 @@ Reset the transcoder quality to defaults:-
     
 Display Chromecast status:
     %s -status    
-""" % ((script_name,) * 14)
+""" % ((script_name,) * 13)
 
 
 
