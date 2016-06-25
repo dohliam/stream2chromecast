@@ -1,7 +1,7 @@
 """
 Locates Chromecast devices on the local network.
 
-version 0.1
+version 0.2
 
 Parts of this are adapted from code found in PyChromecast - https://github.com/balloob/pychromecast
 
@@ -106,12 +106,14 @@ def check_cache(name):
         with open(filepath, "r") as f:
             for line in f.readlines():
                 if "\t" in line:
-                    hostname, host  = line.strip().split("\t", 1)
-                    if name == hostname:
-                        # name is found - check that the host responds with the same name
-                        if name == get_device_name(host):
-                            result = host
-                            break
+                    line_split = line.strip().split("\t", 1)
+                    if len(line_split) > 1:
+                        hostname, host = line_split
+                        if name == hostname:
+                            # name is found - check that the host responds with the same name
+                            if name == get_device_name(host):
+                                result = host
+                                break
     except IOError:
         pass
         
@@ -125,8 +127,9 @@ def save_cache(host_map):
     filepath = os.path.expanduser(CACHE_FILE)
     with open(filepath, "w") as f:
         for key in host_map.keys():
-            # file format: hostname[tab]ip_addr
-            f.write(key + "\t" + host_map[key] + "\n")
+            if len(key) > 0 and len(host_map[key]) > 0:
+                # file format: hostname[tab]ip_addr
+                f.write(key + "\t" + host_map[key] + "\n")
     
             
             
