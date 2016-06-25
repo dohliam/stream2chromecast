@@ -11,6 +11,7 @@ import sys, os
 import signal
 
 from cc_media_controller import CCMediaController
+import cc_device_finder
 import time
 
 import BaseHTTPServer
@@ -78,16 +79,21 @@ Reset the transcoder quality to defaults:-
     %s -reset_transcode_quality  
     
     
-Display Chromecast status:
+Display Chromecast status:-
     %s -status    
     
     
+Search for Chromecast devices on the network:-
+    %s -devicelist
+    
+    
 Additional option to specify an explict Chromecast device by name:
+    e.g. to play a file on a specific device
     %s -devicename <chromecast device name> <file>
     
     
     
-""" % ((script_name,) * 14)
+""" % ((script_name,) * 15)
 
 
 
@@ -436,6 +442,16 @@ def volume_down(device_name=None):
 def set_volume(v, device_name=None):
     """ set the volume to level between 0 and 1 """
     CCMediaController(device_name=device_name).set_volume(v)
+    
+    
+def list_devices():
+    print "Searching for devices, please wait..."
+    device_ips = cc_device_finder.search_network(device_limit=None, time_limit=10)
+    
+    print "%d devices found" % len(device_ips)
+    
+    for device_ip in device_ips:
+        print device_ip, ":", cc_device_finder.get_device_name(device_ip)
 
 
 def validate_args(args):
@@ -500,6 +516,9 @@ def run():
 
     elif args[0] == "-mute":
         set_volume(0, device_name=device_name)
+        
+    elif args[0] == "-devicelist":
+        list_devices()
 
     elif args[0] in ("-transcode"):    
         arg2 = args[1]  
