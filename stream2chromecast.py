@@ -2,7 +2,7 @@
 """
 stream2chromecast.py: Chromecast media streamer for Linux
 
-version 0.3
+version 0.4
 
 =:-)
 
@@ -80,7 +80,14 @@ Reset the transcoder quality to defaults:-
     
 Display Chromecast status:
     %s -status    
-""" % ((script_name,) * 13)
+    
+    
+Additional option to specify an explict Chromecast device by name:
+    %s -devicename <chromecast device name> <file>
+    
+    
+    
+""" % ((script_name,) * 14)
 
 
 
@@ -338,7 +345,7 @@ def get_mimetype(filename, ffprobe_cmd=None):
     
             
             
-def play(filename, transcode=False):
+def play(filename, transcode=False, device_name=None):
     """ play a local file on the chromecast """
 
     if os.path.isfile(filename):
@@ -357,7 +364,7 @@ def play(filename, transcode=False):
     mimetype = get_mimetype(filename, probe_cmd)
 
     
-    cast = CCMediaController()
+    cast = CCMediaController(device_name=device_name)
     status = cast.get_status()
     webserver_ip = status['client'][0]
     
@@ -397,111 +404,123 @@ def play(filename, transcode=False):
         idle = cast.is_idle()
     
     
-def pause():
+def pause(device_name=None):
     """ pause playback """
-    CCMediaController().pause()
+    CCMediaController(device_name=device_name).pause()
 
 
-def unpause():
+def unpause(device_name=None):
     """ continue playback """
-    CCMediaController().play()    
+    CCMediaController(device_name=device_name).play()    
 
         
-def stop():
+def stop(device_name=None):
     """ stop playback and quit the media player app on the chromecast """
-    CCMediaController().stop()
+    CCMediaController(device_name=device_name).stop()
 
 
-def get_status():
+def get_status(device_name=None):
     """ print the status of the chromecast device """
-    print CCMediaController().get_status()
+    print CCMediaController(device_name=device_name).get_status()
 
-def volume_up():
+def volume_up(device_name=None):
     """ raise the volume by 0.1 """
-    CCMediaController().set_volume_up()
+    CCMediaController(device_name=device_name).set_volume_up()
 
 
-def volume_down():
+def volume_down(device_name=None):
     """ lower the volume by 0.1 """
-    CCMediaController().set_volume_down()
+    CCMediaController(device_name=device_name).set_volume_down()
 
 
-def set_volume(v):
+def set_volume(v, device_name=None):
     """ set the volume to level between 0 and 1 """
-    CCMediaController().set_volume(v)
+    CCMediaController(device_name=device_name).set_volume(v)
 
 
-def validate_args():
+def validate_args(args):
     """ validate that there are the correct number of arguments """
-    if len(sys.argv) < 2:
+    if len(args) < 1:
         sys.exit(USAGETEXT)
         
-    arg1 = sys.argv[1]
+    arg1 = args[0]
     
-    if arg1 == "-set_transcoder":
-        if len(sys.argv) < 3:
+    if arg1 in  ("-set_transcoder", "-setvol"):
+        if len(args) < 2:
             sys.exit(USAGETEXT) 
             
     elif arg1 == "-set_transcode_quality":
-        if len(sys.argv) < 4:
+        if len(args) < 3:
             sys.exit(USAGETEXT)     
 
 
-               
+def get_named_arg_value(arg_name, args):
+    """ get a argument value by name """
+    arg_val = None
+    if arg_name in args:
+
+        arg_pos = args.index(arg_name)
+        arg_name = args.pop(arg_pos)
+        
+        if len(args) > (arg_pos + 1):
+            arg_val = args.pop(arg_pos)
+            
+    return arg_val
+    
         
 
 def run():
     """ main execution """
+    args = sys.argv[1:]
     
-    validate_args()
-            
-    arg1 = sys.argv[1]
+    device_name = get_named_arg_value("-devicename", args)
     
-    if arg1 == "-stop":
-        stop()
+    validate_args(args)
+    
+    if args[0] == "-stop":
+        stop(device_name=device_name)
         
-    elif arg1 == "-pause":
-        pause()        
+    elif args[0] == "-pause":
+        pause(device_name=device_name)        
     
-    elif arg1 == "-continue":
-        unpause()           
+    elif args[0] == "-continue":
+        unpause(device_name=device_name)           
     
-    elif arg1 == "-status":
-        get_status()
+    elif args[0] == "-status":
+        get_status(device_name=device_name)
 
-    elif arg1 == "-setvol":
-        arg2 = float(sys.argv[2])
-        set_volume(arg2)
+    elif args[0] == "-setvol":
+        set_volume(float(args[1]), device_name=device_name)
 
-    elif arg1 == "-volup":
-        volume_up()
+    elif args[0] == "-volup":
+        volume_up(device_name=device_name)
 
-    elif arg1 == "-voldown":
-        volume_down()
+    elif args[0] == "-voldown":
+        volume_down(device_name=device_name)
 
-    elif arg1 == "-mute":
-        set_volume(0)
+    elif args[0] == "-mute":
+        set_volume(0, device_name=device_name)
 
-    elif arg1 in ("-transcode"):    
-        arg2 = sys.argv[2]  
-        play(arg2, transcode=True)   
+    elif args[0] in ("-transcode"):    
+        arg2 = args[1]  
+        play(arg2, transcode=True, device_name=device_name)   
 
-    elif arg1 == "-set_transcoder":
-        transcoder = sys.argv[2].lower()
+    elif args[0] == "-set_transcoder":
+        transcoder = args[1].lower()
         save_transcoder(transcoder) 
             
-    elif arg1 == "-set_transcode_quality":
-        ffmpeg_preset = sys.argv[2].lower()
-        ffmpeg_bitrate = sys.argv[3].lower()
+    elif args[0] == "-set_transcode_quality":
+        ffmpeg_preset = args[1].lower()
+        ffmpeg_bitrate = args[2].lower()
         save_transcode_quality(ffmpeg_preset, ffmpeg_bitrate)    
 
-    elif arg1 == "-reset_transcode_quality":
+    elif args[0] == "-reset_transcode_quality":
         ffmpeg_preset = DEFAULTCONFIG['ffmpeg_preset']
         ffmpeg_bitrate = DEFAULTCONFIG['ffmpeg_bitrate']
         save_transcode_quality(ffmpeg_preset, ffmpeg_bitrate)                       
     
     else:
-        play(arg1)        
+        play(args[0], device_name=device_name)        
         
             
 if __name__ == "__main__":
