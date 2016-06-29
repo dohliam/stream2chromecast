@@ -5,9 +5,9 @@ A Chromecast media streamer for Linux.
 
 Stream2Chromecast casts media files to a Chromecast device from Linux.
 
-It will also transcode any unsupported files in real time and play them on the Chromecast.
+It can also transcode any unsupported files in real time and play them on the Chromecast.
 
-It is written in Python 2.7 and uses either ffmpeg or avconv for transcoding functionality.
+It is written in Python 2.7 and uses either ffmpeg or avconv for transcoding.
 
 
 
@@ -71,35 +71,14 @@ To transcode and stream unsupported media files to a Chromecast.
 
         stream2chromecast.py -mute
         
-
-###Configuration
-
- - set the preferred transcoder (if both ffmpeg and avconv are installed)
-    
-        stream2chromecast.py -set_transcoder <transcoder command>
         
- The transcoder command value mst be one of ffmpeg or avconv
-    
-
- - set the transcoding quality preset and bitrate
-
-        stream2chromecast.py -set_transcode_quality <preset> <bitrate>       
-    
- The preset value must be one of:-
-   ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo.
-   
- The bitrate must be an integer (optionally ending with k) e.g. 2000k
-      
-            
- - reset the transcoding quality and bitrate to defaults:-
- 
-        stream2chromecast.py -reset_transcode_quality              
           
 ###Status
 
  - get Chromecast status
 
         stream2chromecast.py -status
+        
         
 ###Specifying a device when there are multiple Chromecasts on the network
 To specify a device by name, use the -devicename parameter.
@@ -109,21 +88,29 @@ e.g.
  
         stream2chromecast.py -devicename my_chromecast my_media.mp4
 
+ - To search the network and list the available devices
+        
+        stream2chromecast.py -devicelist
 
 
+###Specify which transcoder to use
+If both ffmpeg and avconv are installed, ffmpeg will be used by default. 
+
+ - To specify avconv to be used and transcode a playback, use the -transcoder option
+
+        stream2chromecast.py -transcoder avconv -transcode <file>
+        
 
 Notes
 -----
-The real-time transcoding is done by ffmpeg (or avconv) using the ultrafast preset by default. Consequently, by default, the video quality is not as good as it would be if slower presets were used. However, it does allow even modestly powered machines to serve video without buffering. The transcoding preset and bitrate can be adjusted using the "set_transcode_quality" function to improve the quality on more highly powered processors.
-
-avconv is a fork of ffmpeg. It appears that the Ubuntu packagers included avconv in the repositories rather than ffmpeg. However there is a PPA repository available which contains the latest builds of ffmpeg. See the installation notes.
+avconv is a fork of ffmpeg. It is included in the Ubuntu in the repositories rather than ffmpeg. However there is a PPA repository available which contains the latest builds of ffmpeg. See the installation notes.
 
 
 To Do
 -----
     Automatic identification of media types that need transcoding.
-    Simplify transcoding setup
-
+    Add an option to pass raw ffmpeg / avconv options to the transcoder.
+    
 
 License
 -------
