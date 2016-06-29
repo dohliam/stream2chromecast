@@ -74,7 +74,9 @@ class CCMediaController():
     def read_message(self):
         """ read a complete message from the device """
 
-        data = self.sock.recv(4)
+        data = None
+        while data == None:
+            data = self.sock.recv(4)
         
         msg_length, data = cc_message.extract_length_header(data) 
         while len(data) < msg_length:
@@ -113,10 +115,10 @@ class CCMediaController():
                 namespace = "urn:x-cast:com.google.cast.tp.heartbeat"
                 self.send_data(namespace, data) 
                 
-                # if 2 ping/pong messages are received without a response to the request_id, 
+                # if 30 ping/pong messages are received without a response to the request_id, 
                 # assume no response is coming
                 count += 1
-                if count == 2:
+                if count == 30:
                     return resp
                 
             elif msg_type == "RECEIVER_STATUS":
@@ -249,15 +251,16 @@ class CCMediaController():
         namespace = "urn:x-cast:com.google.cast.media"
         resp = self.send_msg_with_response(namespace, data)
 
-        # wait for the player to return either "PLAYING" or "IDLE"
+        # wait for the player to return "BUFFERING", "PLAYING" or "IDLE"
         if resp.get("type", "") == "MEDIA_STATUS":            
             player_state = ""
-            while player_state != "PLAYING" and player_state != "IDLE":
+            while player_state != "PLAYING" and player_state != "IDLE" and player_state != "BUFFERING":
                 time.sleep(2)        
                 
                 self.get_media_status()
                 
-                player_state = self.media_status.get("playerState", "")
+                if self.media_status != None:
+                    player_state = self.media_status.get("playerState", "")
 
                 
         self.close_socket()       
@@ -325,13 +328,14 @@ class CCMediaController():
         
         status = self.get_status()
         
-        if status['receiver_status'] is None:
-            return True
-            
         if status['media_status']  is None:
-            return True
-            
-        return status['media_status'].get("playerState", "") == u"IDLE"
+            if status['receiver_status'] is None:
+                return True
+            else:    
+                return status['receiver_status'].get("statusText", "") == u"Ready To Cast"
+
+        else:    
+            return status['media_status'].get("playerState", "") == u"IDLE"
        
        
 
