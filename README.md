@@ -110,6 +110,7 @@ To Do
 -----
     Automatic identification of media types that need transcoding.
     Add an option to pass raw ffmpeg / avconv options to the transcoder.
+    Python 3 compatibility...?
     
 
 License
