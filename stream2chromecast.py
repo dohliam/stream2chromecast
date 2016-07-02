@@ -20,6 +20,8 @@ from threading import Thread
 
 import subprocess
 
+import httplib
+import urlparse
 
 
 script_name = (sys.argv[0].split(os.sep))[-1]
@@ -60,6 +62,8 @@ Play an unsupported media type (e.g. an mpg file) using ffmpeg or avconv as a re
     %s -transcode <file> 
 
 
+Play remote file using a URL (e.g. a web video):
+    %s -playurl <URL>
 
     
 Display Chromecast status:-
@@ -80,7 +84,7 @@ Additional option to specify the preferred transcoder tool when both ffmpeg & av
     %s -transcoder avconv -transcode <file>
     
     
-""" % ((script_name,) * 13)
+""" % ((script_name,) * 14)
 
 
 
@@ -317,7 +321,12 @@ def play(filename, transcode=False, transcoder=None, device_name=None):
     url = "http://%s:%s%s" % (webserver_ip, str(server.server_port), urllib.quote_plus(filename, "/"))
     print "URL & content-type: ", url, mimetype
 
+    load(cast, url, mimetype)
+    
+    
 
+def load(cast, url, mimetype):
+    """ load a chromecast instance with a url and wait for idle state """
     try:
         print "loading media..."
         
@@ -339,6 +348,51 @@ def play(filename, transcode=False, transcoder=None, device_name=None):
     finally:
         print "done"
     
+    
+def playurl(url, device_name=None):
+    """ play a remote HTTP resource on the chromecast """
+
+    url_parsed = urlparse.urlparse(url)
+    
+    scheme = url_parsed.scheme
+    host = url_parsed.netloc
+    path = url.split(host, 1)[-1]
+    
+    conn = None
+    if scheme == "https":
+        conn = httplib.HTTPSConnection(host)
+    else:
+        conn = httplib.HTTPConnection(host)
+        
+    conn.request("HEAD", path)
+    
+    resp = conn.getresponse()
+    
+    if resp.status != 200:
+        sys.exit("HTTP error:" + resp.status + " - " + resp.reason)
+        
+    print "Found HTTP resource"
+    
+    headers = resp.getheaders()
+    
+    mimetype = None
+    
+    for header in headers:
+        if len(header) > 1:
+            if header[0].lower() == "content-type":
+                mimetype = header[1]
+    
+    if mimetype != None:            
+        print "content-type:", mimetype
+    else:
+        mimetype = "video/mp4"
+        print "resource does not specify mimetype - using default:", mimetype
+    
+    cast = CCMediaController(device_name=device_name)
+    load(cast, url, mimetype)    
+    
+
+            
     
 def pause(device_name=None):
     """ pause playback """
@@ -447,9 +501,13 @@ def run():
     elif args[0] == "-mute":
         set_volume(0, device_name=device_name)
 
-    elif args[0] in ("-transcode"):    
+    elif args[0] == "-transcode":    
         arg2 = args[1]  
-        play(arg2, transcode=True, transcoder=transcoder, device_name=device_name)                        
+        play(arg2, transcode=True, transcoder=transcoder, device_name=device_name)       
+        
+    elif args[0] == "-playurl":    
+        arg2 = args[1]  
+        playurl(arg2, device_name=device_name)                          
         
     elif args[0] == "-devicelist":
         list_devices()
