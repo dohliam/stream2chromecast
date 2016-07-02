@@ -2,7 +2,7 @@
 """
 stream2chromecast.py: Chromecast media streamer for Linux
 
-version 0.4
+version 0.5
 
 =:-)
 
