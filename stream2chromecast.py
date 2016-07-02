@@ -23,6 +23,8 @@ import subprocess
 import httplib
 import urlparse
 
+import select
+
 
 script_name = (sys.argv[0].split(os.sep))[-1]
 
@@ -112,20 +114,11 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
     def send_headers(self, filepath):
+        self.protocol_version = "HTTP/1.1"
         self.send_response(200)
         self.send_header("Content-type", self.content_type)
-        
-        content_length = self.get_content_length(filepath)
-        if content_length != None:
-            self.send_header("Content-length", str(content_length))        
-        
+        self.send_header("Content-length", str(os.path.getsize(filepath)))        
         self.end_headers()    
-        
-        
-    def get_content_length(self, filepath):
-        filelength = os.path.getsize(filepath)
-        print "content length:", filelength
-        return filelength
 
 
     def write_response(self, filepath):
@@ -145,13 +138,22 @@ class TranscodingRequestHandler(RequestHandler):
         ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, shell=True)       
 
         for line in ffmpeg_process.stdout:
+            chunk_size = "%0.2X" % len(line)
+            self.wfile.write(chunk_size)
+            self.wfile.write("\r\n")
             self.wfile.write(line) 
-
-
-    def get_content_length(self, filepath):
-        # the transcoder works in real time, so the final content length is unknown at this point
-        print "content length unknown"
-        return None
+            self.wfile.write("\r\n")            
+            
+        self.wfile.write("0")
+        self.wfile.write("\r\n\r\n")             
+        
+        
+    def send_headers(self, filepath):
+        self.protocol_version = "HTTP/1.1"
+        self.send_response(200)
+        self.send_header("Content-type", self.content_type)
+        self.send_header("Transfer-Encoding", "chunked")
+        self.end_headers()             
 
 
             
@@ -321,7 +323,7 @@ def play(filename, transcode=False, transcoder=None, device_name=None):
         
     
     req_handler = RequestHandler
-    req_handler.content_type = mimetype
+
     
     if transcode:
         if transcoder_cmd == "ffmpeg":  
@@ -330,6 +332,9 @@ def play(filename, transcode=False, transcoder=None, device_name=None):
         elif transcoder_cmd == "avconv":   
             req_handler = TranscodingRequestHandler
             req_handler.transcoder_command = AVCONV
+    else:
+        req_handler.content_type = mimetype
+        
     
     # create a webserver to handle a single request on a free port        
     server = BaseHTTPServer.HTTPServer((webserver_ip, 0), req_handler)
@@ -339,9 +344,10 @@ def play(filename, transcode=False, transcoder=None, device_name=None):
 
     
     url = "http://%s:%s%s" % (webserver_ip, str(server.server_port), urllib.quote_plus(filename, "/"))
-    print "URL & content-type: ", url, mimetype
+    print "URL & content-type: ", url, req_handler.content_type
 
-    load(cast, url, mimetype)
+    load(cast, url, req_handler.content_type)
+
     
     
 
