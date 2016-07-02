@@ -101,16 +101,31 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     content_type = "video/mp4"
     
     """ Handle HTTP requests for files which do not need transcoding """
+    
     def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", self.content_type)
-        self.end_headers()
-        
         filepath = urllib.unquote_plus(self.path)
         
-        print "sending file:", filepath
+        self.send_headers(filepath)       
         
+        print "sending file"        
         self.write_response(filepath)
+
+
+    def send_headers(self, filepath):
+        self.send_response(200)
+        self.send_header("Content-type", self.content_type)
+        
+        content_length = self.get_content_length(filepath)
+        if content_length != None:
+            self.send_header("Content-length", str(content_length))        
+        
+        self.end_headers()    
+        
+        
+    def get_content_length(self, filepath):
+        filelength = os.path.getsize(filepath)
+        print "content length:", filelength
+        return filelength
 
 
     def write_response(self, filepath):
@@ -132,6 +147,11 @@ class TranscodingRequestHandler(RequestHandler):
         for line in ffmpeg_process.stdout:
             self.wfile.write(line) 
 
+
+    def get_content_length(self, filepath):
+        # the transcoder works in real time, so the final content length is unknown at this point
+        print "content length unknown"
+        return None
 
 
             
