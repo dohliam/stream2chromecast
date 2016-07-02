@@ -40,6 +40,11 @@ To transcode and stream unsupported media files to a Chromecast.
 
         stream2chromecast.py -transcode my_mpeg_file.mpg
 
+To play a supported file from a URL.
+    This plays the file directly from the remote address, so the file must be streamable and cannot be transcoded.
+
+        stream2chromecast.py -playurl http://www.example.com/my_media.mp4
+
 
 ###Control playback
 
