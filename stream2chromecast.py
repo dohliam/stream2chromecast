@@ -11,6 +11,7 @@ import sys, os
 import signal
 
 from cc_media_controller import CCMediaController
+import cc_device_finder
 import time
 
 import BaseHTTPServer
