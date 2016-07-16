@@ -86,12 +86,16 @@ To play a supported file from a URL.
         
         
 ###Specifying a device when there are multiple Chromecasts on the network
-To specify a device by name, use the -devicename parameter.
+To specify a device by name or IP address, use the -devicename parameter.
 e.g.
 
  - To play a file on a device named "my_chromecast"
  
         stream2chromecast.py -devicename my_chromecast my_media.mp4
+
+ - To play a file on a device at IP address 192.168.1.10
+ 
+        stream2chromecast.py -devicename 192.168.1.10 my_media.mp4
 
  - To search the network and list the available devices
         
