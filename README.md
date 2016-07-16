@@ -109,6 +109,14 @@ If both ffmpeg and avconv are installed, ffmpeg will be used by default.
 
         stream2chromecast.py -transcoder avconv -transcode <file>
         
+    
+###Specify a port to use for streaming media.
+By default, a random unused port will be selected to serve the media from. In a firewalled environment, it can be useful to be able to specify the port to open
+
+ - To specify port 8765 to serve media from
+ 
+        stream2chromecast.py -port 8765 <file>
+
 
 Notes
 -----
