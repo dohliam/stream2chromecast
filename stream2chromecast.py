@@ -87,7 +87,11 @@ Additional option to specify the preferred transcoder tool when both ffmpeg & av
     %s -transcoder avconv -transcode <file>
     
     
-""" % ((script_name,) * 14)
+Additional option to specify the port from which the media is streamed. This can be useful in a firewalled environment.
+    e.g. to serve the media on port 8765
+    %s -port 8765 <file>
+    
+""" % ((script_name,) * 15)
 
 
 
@@ -297,7 +301,7 @@ def get_mimetype(filename, ffprobe_cmd=None):
     
             
             
-def play(filename, transcode=False, transcoder=None, device_name=None):
+def play(filename, transcode=False, transcoder=None, device_name=None, server_port=None):
     """ play a local file on the chromecast """
 
     if os.path.isfile(filename):
@@ -337,8 +341,13 @@ def play(filename, transcode=False, transcoder=None, device_name=None):
         req_handler.content_type = mimetype
         
     
-    # create a webserver to handle a single request on a free port        
-    server = BaseHTTPServer.HTTPServer((webserver_ip, 0), req_handler)
+    # create a webserver to handle a single request on a free port or a specific port if passed in the parameter   
+    port = 0    
+    
+    if server_port is not None:
+        port = int(server_port)
+        
+    server = BaseHTTPServer.HTTPServer((webserver_ip, port), req_handler)
     
     thread = Thread(target=server.handle_request)
     thread.start()    
@@ -502,6 +511,9 @@ def run():
     # optional transcoder parm. if not specified, ffmpeg will be used, if installed, otherwise avconv.
     transcoder = get_named_arg_value("-transcoder", args)    
     
+    # optional server port parm. if not specified, a random available port will be used
+    server_port = get_named_arg_value("-port", args)     
+    
     validate_args(args)
     
     if args[0] == "-stop":
@@ -530,7 +542,7 @@ def run():
 
     elif args[0] == "-transcode":    
         arg2 = args[1]  
-        play(arg2, transcode=True, transcoder=transcoder, device_name=device_name)       
+        play(arg2, transcode=True, transcoder=transcoder, device_name=device_name, server_port=server_port)       
         
     elif args[0] == "-playurl":    
         arg2 = args[1]  
@@ -540,7 +552,7 @@ def run():
         list_devices()
             
     else:
-        play(args[0], device_name=device_name)        
+        play(args[0], device_name=device_name, server_port=server_port)        
         
             
 if __name__ == "__main__":
