@@ -9,6 +9,7 @@ import socket, ssl, select
 import json
 import sys
 import time
+import re
 
 import cc_device_finder
 import cc_message
@@ -21,11 +22,7 @@ class CCMediaController():
     def __init__(self, device_name=None):
         """ initialise """
         
-        self.host, name = cc_device_finder.find_device(name=device_name)
-        if self.host is None:
-            sys.exit("No Chromecast found on the network")
-            
-        print "Device:", name
+        self.host = self.get_device(device_name)
 
         self.sock = None
         
@@ -35,6 +32,30 @@ class CCMediaController():
         self.receiver_app_status = None
         self.media_status = None
         self.volume_status = None
+        
+    
+    
+    def get_device(self, device_name):
+        """ get the device ip address """
+        
+        host = None
+        
+        is_ip_addr = device_name is not None and re.match( "[0-9]+.[0-9]+.[0-9]+.[0-9]+$", device_name) is not None
+        
+        if is_ip_addr:
+            host = device_name
+            try:
+                print "ip_addr:", host, "device name:", cc_device_finder.get_device_name(host)
+            except socket.error:
+                sys.exit("No Chromecast found on ip:" + host)
+        else:
+            host, name = cc_device_finder.find_device(name=device_name)
+            if host is None:
+                sys.exit("No Chromecast found on the network")
+                
+            print "device name:", name    
+            
+        return host
         
         
         
