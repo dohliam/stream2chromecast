@@ -77,7 +77,7 @@ Search for all Chromecast devices on the network:-
     %s -devicelist
     
     
-Additional option to specify an Chromecast device by name explicitly:
+Additional option to specify an Chromecast device by name (or ip address) explicitly:
     e.g. to play a file on a specific device
     %s -devicename <chromecast device name> <file>
     
