@@ -109,7 +109,15 @@ If both ffmpeg and avconv are installed, ffmpeg will be used by default.
 
         stream2chromecast.py -transcoder avconv -transcode <file>
         
-    
+
+###Supply custom transcoder parameters
+It is possible pass in specific parameters to ffmpeg or avconv using the -transcodeopts parameter with the options surrounded by quotes
+
+ - To specify an output video bitrate of 1000k and an audio bitrate of 128k
+
+        stream2chromecast.py -transcodeopts '-b:v 1000k -b:a 128k' -transcode <file>
+        
+            
 ###Specify a port to use for streaming media.
 By default, a random unused port will be selected to serve the media from. In a firewalled environment, it can be useful to be able to specify the port to open
 
