@@ -91,15 +91,20 @@ Additional option to specify the port from which the media is streamed. This can
     e.g. to serve the media on port 8765
     %s -port 8765 <file>
     
-""" % ((script_name,) * 15)
+    
+Additional option to supply custom parameters to the transcoder (ffmpeg or avconv)
+    e.g. to transcode the media with an output video bitrate of 1000k
+    %s -transcode -transcodeopts '-b:v 1000k' <file>
+    
+""" % ((script_name,) * 16)
 
 
 
 
 PIDFILE = "/tmp/stream2chromecast_%s.pid"
 
-FFMPEG = 'ffmpeg -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error -'
-AVCONV = 'avconv -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error -'
+FFMPEG = 'ffmpeg -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error %s -'
+AVCONV = 'avconv -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error %s -'
 
 
 
@@ -134,10 +139,11 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 class TranscodingRequestHandler(RequestHandler):
     """ Handle HTTP requests for files which require realtime transcoding with ffmpeg """
     transcoder_command = FFMPEG
+    transcode_options = ""
                     
     def write_response(self, filepath):
 
-        ffmpeg_command = self.transcoder_command % filepath 
+        ffmpeg_command = self.transcoder_command % (filepath, self.transcode_options) 
         
         ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, shell=True)       
 
@@ -302,7 +308,7 @@ def get_mimetype(filename, ffprobe_cmd=None):
     
             
             
-def play(filename, transcode=False, transcoder=None, device_name=None, server_port=None):
+def play(filename, transcode=False, transcoder=None, transcode_options=None, device_name=None, server_port=None):
     """ play a local file on the chromecast """
 
     if os.path.isfile(filename):
@@ -338,6 +344,9 @@ def play(filename, transcode=False, transcoder=None, device_name=None, server_po
         elif transcoder_cmd == "avconv":   
             req_handler = TranscodingRequestHandler
             req_handler.transcoder_command = AVCONV
+        
+        if transcode_options is not None:    
+            req_handler.transcode_options = transcode_options
     else:
         req_handler.content_type = mimetype
         
@@ -515,6 +524,9 @@ def run():
     # optional server port parm. if not specified, a random available port will be used
     server_port = get_named_arg_value("-port", args)     
     
+    # optional transcode options parm. if specified, these options will be passed to the transcoder
+    transcode_options = get_named_arg_value("-transcodeopts", args)     
+    
     validate_args(args)
     
     if args[0] == "-stop":
@@ -543,7 +555,7 @@ def run():
 
     elif args[0] == "-transcode":    
         arg2 = args[1]  
-        play(arg2, transcode=True, transcoder=transcoder, device_name=device_name, server_port=server_port)       
+        play(arg2, transcode=True, transcoder=transcoder, transcode_options=transcode_options, device_name=device_name, server_port=server_port)       
         
     elif args[0] == "-playurl":    
         arg2 = args[1]  
