@@ -96,8 +96,7 @@ Additional option to specify the port from which the media is streamed. This can
 
 
 
-PIDFILE = "/tmp/stream2chromecast.pid"
-FFMPEGPIDFILE = "/tmp/stream2chromecast_ffmpeg.pid"
+PIDFILE = "/tmp/stream2chromecast_%s.pid"
 
 FFMPEG = 'ffmpeg -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error -'
 AVCONV = 'avconv -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error -'
@@ -206,10 +205,11 @@ def is_transcoder_installed(transcoder_application):
 
 
 
-def kill_old_pid():
-    """ attempts to kill a previously running instance of this application. """
+def kill_old_pid(device_ip):
+    """ attempts to kill a previously running instance of this application casting to the specified device. """
+    pid_file = PIDFILE % device_ip
     try:
-        with open(PIDFILE, "r") as pidfile:
+        with open(pid_file, "r") as pidfile:
             pid = int(pidfile.read())
             os.killpg(pid, signal.SIGTERM)    
     except:
@@ -217,9 +217,10 @@ def kill_old_pid():
                
 
 
-def save_pid():
-    """ saves the process id of this application in a pid file. """
-    with open(PIDFILE, "w") as pidfile:
+def save_pid(device_ip):
+    """ saves the process id of this application casting to the specified device in a pid file. """
+    pid_file = PIDFILE % device_ip
+    with open(pid_file, "w") as pidfile:
         pidfile.write("%d" %  os.getpid())
 
 
@@ -310,8 +311,10 @@ def play(filename, transcode=False, transcoder=None, device_name=None, server_po
         sys.exit("media file %s not found" % filename)
         
 
-    kill_old_pid()
-    save_pid()
+    cast = CCMediaController(device_name=device_name)
+    
+    kill_old_pid(cast.host)
+    save_pid(cast.host)
         
     print "Playing:", filename
     
@@ -319,8 +322,6 @@ def play(filename, transcode=False, transcoder=None, device_name=None, server_po
         
     mimetype = get_mimetype(filename, probe_cmd)
 
-    
-    cast = CCMediaController(device_name=device_name)
     status = cast.get_status()
     webserver_ip = status['client'][0]
     
