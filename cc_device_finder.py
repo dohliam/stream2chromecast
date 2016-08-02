@@ -1,7 +1,7 @@
 """
 Locates Chromecast devices on the local network.
 
-version 0.2
+version 0.3
 
 Parts of this are adapted from code found in PyChromecast - https://github.com/balloob/pychromecast
 
@@ -76,22 +76,27 @@ def search_network(device_limit=None, time_limit=5):
 def get_device_name(ip_addr):
     """ get the device friendly name for an IP address """
     
-    conn = httplib.HTTPConnection(ip_addr + ":8008")
-    conn.request("GET", "/ssdp/device-desc.xml")
-    resp = conn.getresponse()
-   
-    if resp.status == 200:
-        status_doc = resp.read()
-        try:
-            xml = ElementTree.fromstring(status_doc)
+    try:
+        conn = httplib.HTTPConnection(ip_addr + ":8008")
+        conn.request("GET", "/ssdp/device-desc.xml")
+        resp = conn.getresponse()
+       
+        if resp.status == 200:
+            status_doc = resp.read()
+            try:
+                xml = ElementTree.fromstring(status_doc)
 
-            device_element = xml.find("{urn:schemas-upnp-org:device-1-0}" + "device")
+                device_element = xml.find("{urn:schemas-upnp-org:device-1-0}" + "device")
 
-            return device_element.find("{urn:schemas-upnp-org:device-1-0}" + "friendlyName").text
+                return device_element.find("{urn:schemas-upnp-org:device-1-0}" + "friendlyName").text
 
-        except ElementTree.ParseError:
-            return ""    
-    else:
+            except ElementTree.ParseError:
+                return ""    
+        else:
+            return "" 
+    except:
+        # unable to get a name - this might be for many reasons 
+        # e.g. a non chromecast device on the network that responded to the search
         return "" 
         
         
@@ -111,7 +116,9 @@ def check_cache(name):
                         hostname, host = line_split
                         if name == hostname:
                             # name is found - check that the host responds with the same name
-                            if name == get_device_name(host):
+                            device_name = get_device_name(host)
+                            print "Device name response:", device_name
+                            if name == device_name and device_name != "":
                                 result = host
                                 break
     except IOError:
@@ -149,7 +156,7 @@ def find_device(name=None, time_limit=6):
         ip_addr = check_cache(name)
         if ip_addr is not None:
             # address found in cache
-            print "found device:", name
+            print "found device in cache:", name
             return ip_addr, name
         else:
             # no cached results found run a full network search
@@ -158,7 +165,9 @@ def find_device(name=None, time_limit=6):
             
             hosts = search_network(time_limit=time_limit)
             for host in hosts:
-                result_map[get_device_name(host)] = host
+                device_name = get_device_name(host)
+                if device_name != "":
+                    result_map[device_name] = host
                 
             save_cache(result_map)
             
