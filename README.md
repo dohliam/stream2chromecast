@@ -157,3 +157,5 @@ https://gist.github.com/TheCrazyT/11263599
 
 
 Thanks to [dohliam](https://github.com/dohliam) for bug fixes and additional functionality.
+
+Thanks to [interlocuteur](https://github.com/interlocuteur) for bug fixes, error reports & advice.
