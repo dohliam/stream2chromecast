@@ -14,13 +14,18 @@ It is written in Python 2.7 and uses either ffmpeg or avconv for transcoding.
 
 Installation
 ------------
-To play media file types that are unsupported by Chromecast, we need either ffmpeg or avconv installed to do the transcoding.
+To play media file types that are unsupported by Chromecast, either ffmpeg or avconv need to be installed to do the transcoding.
 
-On Ubuntu we can either install avconv:-
+On Ubuntu, either install ffmpeg:-
+
+    sudo apt-get install ffmpeg
+
+...or avconv:-
 
     sudo apt-get install libav-tools
    
-...or install ffmpeg
+   
+On some older Ubuntu versions (e.g. 14.04), a third party PPA is required to install ffmpeg:-
 
     sudo add-apt-repository ppa:mc3man/trusty-media
     apt-get install ffmpeg
