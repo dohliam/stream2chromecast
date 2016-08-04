@@ -26,6 +26,8 @@ import urlparse
 
 import select
 
+import tempfile
+
 
 script_name = (sys.argv[0].split(os.sep))[-1]
 
@@ -101,7 +103,7 @@ Additional option to supply custom parameters to the transcoder (ffmpeg or avcon
 
 
 
-PIDFILE = "/tmp/stream2chromecast_%s.pid"
+PIDFILE = os.path.join(tempfile.gettempdir(), "stream2chromecast_%s.pid") 
 
 FFMPEG = 'ffmpeg -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error %s -'
 AVCONV = 'avconv -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error %s -'
