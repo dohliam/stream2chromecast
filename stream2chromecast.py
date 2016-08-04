@@ -126,13 +126,25 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.protocol_version = "HTTP/1.1"
         self.send_response(200)
         self.send_header("Content-type", self.content_type)
-        self.send_header("Content-length", str(os.path.getsize(filepath)))        
+        self.send_header("Transfer-Encoding", "chunked")
         self.end_headers()    
 
 
     def write_response(self, filepath):
-        with open(filepath, "r") as f: 
-            self.wfile.write(f.read())    
+        with open(filepath, "rb") as f:           
+            while True:
+                line = f.read(1024)
+                if len(line) == 0:
+                    break
+            
+                chunk_size = "%0.2X" % len(line)
+                self.wfile.write(chunk_size)
+                self.wfile.write("\r\n")
+                self.wfile.write(line) 
+                self.wfile.write("\r\n")  
+                
+        self.wfile.write("0")
+        self.wfile.write("\r\n\r\n")                             
 
 
 
@@ -155,15 +167,7 @@ class TranscodingRequestHandler(RequestHandler):
             self.wfile.write("\r\n")            
             
         self.wfile.write("0")
-        self.wfile.write("\r\n\r\n")             
-        
-        
-    def send_headers(self, filepath):
-        self.protocol_version = "HTTP/1.1"
-        self.send_response(200)
-        self.send_header("Content-type", self.content_type)
-        self.send_header("Transfer-Encoding", "chunked")
-        self.end_headers()             
+        self.wfile.write("\r\n\r\n")                         
 
 
             
