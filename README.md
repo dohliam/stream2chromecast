@@ -133,7 +133,7 @@ By default, a random unused port will be selected to serve the media from. In a 
 
 Notes
 -----
-avconv is a fork of ffmpeg. It is included in the Ubuntu in the repositories rather than ffmpeg. However there is a PPA repository available which contains the latest builds of ffmpeg. See the installation notes.
+avconv is a fork of ffmpeg. For a time, (when this script was first written) it was included in the Ubuntu repositories rather than ffmpeg. There was a PPA repository available which contained the latest builds of ffmpeg (see the installation notes). For those who are using the 14.04 release, this might still be a good option.
 
 
 To Do
