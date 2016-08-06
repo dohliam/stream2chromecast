@@ -139,8 +139,8 @@ avconv is a fork of ffmpeg. For a time, (when this script was first written) it 
 To Do
 -----
     Automatic identification of media types that need transcoding.
-    Add an option to pass raw ffmpeg / avconv options to the transcoder.
     Python 3 compatibility...?
+    curses interface.
     
 
 License
