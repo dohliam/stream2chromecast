@@ -1,11 +1,31 @@
 """
 Locates Chromecast devices on the local network.
 
-version 0.3
+version 0.3.1
 
 Parts of this are adapted from code found in PyChromecast - https://github.com/balloob/pychromecast
 
 """
+
+
+# Copyright (C) 2014-2016 Pat Carter
+#
+# This file is part of Stream2chromecast.
+#
+# Stream2chromecast is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Stream2chromecast is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Stream2chromecast.  If not, see <http://www.gnu.org/licenses/>.
+
+
 
 import os
 import socket, select
