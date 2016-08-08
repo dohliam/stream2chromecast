@@ -2,11 +2,34 @@
 """
 stream2chromecast.py: Chromecast media streamer for Linux
 
-version 0.5
+author: Pat Carter - https://github.com/Pat-Carter/stream2chromecast
 
-=:-)
+version: 0.6
 
 """
+
+
+# Copyright (C) 2014-2016 Pat Carter
+#
+# This file is part of Stream2chromecast.
+#
+# Stream2chromecast is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Stream2chromecast is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Stream2chromecast.  If not, see <http://www.gnu.org/licenses/>.
+
+
+VERSION = "0.6"
+
+
 import sys, os
 import signal
 
@@ -27,6 +50,7 @@ import urlparse
 import select
 
 import tempfile
+
 
 
 script_name = (sys.argv[0].split(os.sep))[-1]
@@ -316,6 +340,8 @@ def get_mimetype(filename, ffprobe_cmd=None):
             
 def play(filename, transcode=False, transcoder=None, transcode_options=None, device_name=None, server_port=None):
     """ play a local file on the chromecast """
+    
+    print_ident()
 
     if os.path.isfile(filename):
         filename = os.path.abspath(filename)
@@ -403,6 +429,8 @@ def load(cast, url, mimetype):
     
 def playurl(url, device_name=None):
     """ play a remote HTTP resource on the chromecast """
+    
+    print_ident()
 
     url_parsed = urlparse.urlparse(url)
     
@@ -489,7 +517,21 @@ def list_devices():
     for device_ip in device_ips:
         print device_ip, ":", cc_device_finder.get_device_name(device_ip)
         
-        
+
+def print_ident():
+    """ display initial messages """
+    print
+    print "-----------------------------------------"   
+    print     
+    print "Stream2Chromecast version:%s" % VERSION        
+    print 
+    print "Copyright (C) 2014-2016 Pat Carter"
+    print "GNU General Public License v3.0" 
+    print "https://www.gnu.org/licenses/gpl-3.0.html"
+    print    
+    print "-----------------------------------------"
+    print 
+    
 
 def validate_args(args):
     """ validate that there are the correct number of arguments """
