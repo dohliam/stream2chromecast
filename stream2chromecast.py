@@ -30,7 +30,7 @@ version: 0.6
 VERSION = "0.6"
 
 
-import sys, os
+import sys, os, errno
 import signal
 
 from cc_media_controller import CCMediaController
@@ -47,7 +47,7 @@ import subprocess
 import httplib
 import urlparse
 
-import select
+import socket
 
 import tempfile
 
@@ -142,10 +142,37 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_GET(self):
         filepath = urllib.unquote_plus(self.path)
         
+        self.suppress_socket_error_report = None
+        
         self.send_headers(filepath)       
         
-        print "sending file"        
-        self.write_response(filepath)
+        print "sending file"       
+        try: 
+            self.write_response(filepath)
+        except socket.error, e:     
+            if isinstance(e.args, tuple):
+                if e[0] in (errno.EPIPE, errno.ECONNRESET):
+                   print "disconnected"
+                   self.suppress_socket_error_report = True
+                   return
+            
+            raise
+
+
+    def handle_one_request(self):
+        try:
+            return BaseHTTPServer.BaseHTTPRequestHandler.handle_one_request(self)
+        except socket.error:
+            if not self.suppress_socket_error_report:
+                raise
+
+
+    def finish(self):
+        try:
+            return BaseHTTPServer.BaseHTTPRequestHandler.finish(self)
+        except socket.error:
+            if not self.suppress_socket_error_report:
+                raise
 
 
     def send_headers(self, filepath):
