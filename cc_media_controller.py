@@ -52,6 +52,7 @@ class CCMediaController():
         self.receiver_app_status = None
         self.media_status = None
         self.volume_status = None
+        self.current_applications = None
         
     
     
@@ -195,10 +196,11 @@ class CCMediaController():
         if msg.has_key('status'):
             status = msg['status']
             if status.has_key('applications'):
-                applications = status['applications']
-                for application in applications:
+                self.current_applications = status['applications']
+                for application in self.current_applications:
                     if application.get("appId") == MEDIAPLAYER_APPID:
                         self.receiver_app_status = application
+                        
                         
             if status.has_key('volume'):
                 self.volume_status = status['volume']
@@ -352,11 +354,19 @@ class CCMediaController():
             self.connect(transport_id)
             self.get_media_status()
         
+        application_list = []
+        if self.current_applications is not None:
+            for application in self.current_applications:
+                application_list.append({
+                    'appId':application.get('appId', ""), 
+                    'displayName':application.get('displayName', ""),  
+                    'statusText':application.get('statusText', "")})
         
         status = {'receiver_status':self.receiver_app_status, 
                   'media_status':self.media_status, 
                   'host':self.host, 
-                  'client':self.sock.getsockname()}
+                  'client':self.sock.getsockname(),
+                  'applications':application_list}
                 
         self.close_socket()
         
