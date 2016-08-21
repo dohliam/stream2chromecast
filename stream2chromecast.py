@@ -401,8 +401,6 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, tra
         
     
     req_handler = RequestHandler
-    req_handler.content_type = mimetype    
-
     
     if transcode:
         if transcoder_cmd in ("ffmpeg", "avconv"):
@@ -419,6 +417,9 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, tra
             req_handler.bufsize = transcode_bufsize
         else:
             print "No transcoder is installed. Attempting standard playback"
+            req_handler.content_type = mimetype    
+    else:
+        req_handler.content_type = mimetype    
         
     
     # create a webserver to handle a single request on a free port or a specific port if passed in the parameter   
