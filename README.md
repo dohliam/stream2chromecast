@@ -131,6 +131,15 @@ By default, a random unused port will be selected to serve the media from. In a 
         stream2chromecast.py -port 8765 <file>
 
 
+###Specify a buffer-size for the transcoder process
+By default, the transcoder process returns its data to be sent to the device without buffering. Buffering the data can help in situations where the network connection is slow.
+
+ - To specify a buffer size of 5 megabytes
+
+        stream2chromecast.py -transcodebufsize 5242880 -transcode <file>
+
+ 
+
 Notes
 -----
 avconv is a fork of ffmpeg. For a time, (when this script was first written) it was included in the Ubuntu repositories rather than ffmpeg. There was a PPA repository available which contained the latest builds of ffmpeg (see the installation notes). For those who are using the 14.04 release, this might still be a good option.
@@ -164,3 +173,6 @@ https://gist.github.com/TheCrazyT/11263599
 Thanks to [dohliam](https://github.com/dohliam) for bug fixes and additional functionality.
 
 Thanks to [interlocuteur](https://github.com/interlocuteur) for bug fixes, error reports & advice.
+
+Thanks to [jsalatiel](https://github.com/jsalatiel) for suggestions & advice.
+
