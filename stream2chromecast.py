@@ -4,7 +4,7 @@ stream2chromecast.py: Chromecast media streamer for Linux
 
 author: Pat Carter - https://github.com/Pat-Carter/stream2chromecast
 
-version: 0.6
+version: 0.6.1
 
 """
 
@@ -27,7 +27,7 @@ version: 0.6
 # along with Stream2chromecast.  If not, see <http://www.gnu.org/licenses/>.
 
 
-VERSION = "0.6"
+VERSION = "0.6.1"
 
 
 import sys, os, errno
@@ -122,7 +122,11 @@ Additional option to supply custom parameters to the transcoder (ffmpeg or avcon
     e.g. to transcode the media with an output video bitrate of 1000k
     %s -transcode -transcodeopts '-b:v 1000k' <file>
     
-""" % ((script_name,) * 16)
+Additional option to specify the buffer size of the data returned from the transcoder. Increasing this can help when on a slow network.
+    e.g. to specify a buffer size of 5 megabytes
+    %s -transcode -transcodebufsize 5242880 <file>
+    
+""" % ((script_name,) * 17)
 
 
 
@@ -205,12 +209,15 @@ class TranscodingRequestHandler(RequestHandler):
     """ Handle HTTP requests for files which require realtime transcoding with ffmpeg """
     transcoder_command = FFMPEG
     transcode_options = ""
+    bufsize = 0
                     
     def write_response(self, filepath):
-
+        if self.bufsize != 0:
+            print "transcode buffer size:", self.bufsize
+        
         ffmpeg_command = self.transcoder_command % (filepath, self.transcode_options) 
         
-        ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, shell=True)       
+        ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, shell=True, bufsize=self.bufsize)       
 
         for line in ffmpeg_process.stdout:
             chunk_size = "%0.2X" % len(line)
@@ -365,7 +372,7 @@ def get_mimetype(filename, ffprobe_cmd=None):
     
             
             
-def play(filename, transcode=False, transcoder=None, transcode_options=None, device_name=None, server_port=None):
+def play(filename, transcode=False, transcoder=None, transcode_options=None, transcode_bufsize=0, device_name=None, server_port=None):
     """ play a local file on the chromecast """
     
     print_ident()
@@ -394,20 +401,24 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, dev
         
     
     req_handler = RequestHandler
+    req_handler.content_type = mimetype    
 
     
     if transcode:
-        if transcoder_cmd == "ffmpeg":  
+        if transcoder_cmd in ("ffmpeg", "avconv"):
             req_handler = TranscodingRequestHandler
-            req_handler.transcoder_command = FFMPEG
-        elif transcoder_cmd == "avconv":   
-            req_handler = TranscodingRequestHandler
-            req_handler.transcoder_command = AVCONV
-        
-        if transcode_options is not None:    
-            req_handler.transcode_options = transcode_options
-    else:
-        req_handler.content_type = mimetype
+            
+            if transcoder_cmd == "ffmpeg":  
+                req_handler.transcoder_command = FFMPEG
+            else:
+                req_handler.transcoder_command = AVCONV
+                
+            if transcode_options is not None:    
+                req_handler.transcode_options = transcode_options
+                
+            req_handler.bufsize = transcode_bufsize
+        else:
+            print "No transcoder is installed. Attempting standard playback"
         
     
     # create a webserver to handle a single request on a free port or a specific port if passed in the parameter   
@@ -570,7 +581,7 @@ def validate_args(args):
     
 
 
-def get_named_arg_value(arg_name, args):
+def get_named_arg_value(arg_name, args, integer=False):
     """ get a argument value by name """
     arg_val = None
     if arg_name in args:
@@ -580,7 +591,17 @@ def get_named_arg_value(arg_name, args):
         
         if len(args) > (arg_pos + 1):
             arg_val = args.pop(arg_pos)
-            
+    
+    if integer:
+        int_arg_val = 0
+        if arg_val is not None:
+            try:
+                int_arg_val = int(arg_val)
+            except ValueError:
+                print "Invalid integer parameter, defaulting to zero. Parameter name:", arg_name
+                
+        arg_val = int_arg_val
+                
     return arg_val
     
         
@@ -602,6 +623,9 @@ def run():
     # optional transcode options parm. if specified, these options will be passed to the transcoder
     transcode_options = get_named_arg_value("-transcodeopts", args)     
     
+    # optional transcode bufsize parm. if specified, the transcoder will buffer approximately this many bytes of output
+    transcode_bufsize = get_named_arg_value("-transcodebufsize", args, integer=True) 
+        
     validate_args(args)
     
     if args[0] == "-stop":
@@ -630,7 +654,7 @@ def run():
 
     elif args[0] == "-transcode":    
         arg2 = args[1]  
-        play(arg2, transcode=True, transcoder=transcoder, transcode_options=transcode_options, device_name=device_name, server_port=server_port)       
+        play(arg2, transcode=True, transcoder=transcoder, transcode_options=transcode_options, transcode_bufsize=transcode_bufsize, device_name=device_name, server_port=server_port)       
         
     elif args[0] == "-playurl":    
         arg2 = args[1]  
