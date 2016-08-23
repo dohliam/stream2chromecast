@@ -116,9 +116,9 @@ class CCMediaController():
     def read_message(self):
         """ read a complete message from the device """
 
-        data = None
-        while data == None:
-            data = self.sock.recv(4)
+        data = ""
+        while len(data) < 4:
+            data += self.sock.recv(4)
         
         msg_length, data = cc_message.extract_length_header(data) 
         while len(data) < msg_length:
