@@ -28,6 +28,8 @@ On Ubuntu, either install ffmpeg:-
 On some older Ubuntu versions (e.g. 14.04), a third party PPA is required to install ffmpeg:-
 
     sudo add-apt-repository ppa:mc3man/trusty-media
+    sudo apt-get update
+    # sudo apt-get dist-upgrade # optional
     apt-get install ffmpeg
    
 
