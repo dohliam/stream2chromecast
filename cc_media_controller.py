@@ -251,7 +251,7 @@ class CCMediaController():
             
             
                     
-    def load(self, content_url, content_type, sub):
+    def load(self, content_url, content_type, sub, sub_language):
         """ Launch the player app, load & play a URL """
         
         self.connect("receiver-0")
@@ -292,6 +292,8 @@ class CCMediaController():
                 }
 
         if sub:
+            if sub_language is None:
+                sub_language = "en-US"
             data["media"].update({
                                 "textTrackStyle":{
                                     'backgroundColor':'#FFFFFF00'
@@ -299,7 +301,7 @@ class CCMediaController():
                                 "tracks": [{"trackId": 1,
                                             "trackContentId": sub,
                                             "type": "TEXT",
-                                            "language": "en-US",
+                                            "language": sub_language,
                                             "subtype": "SUBTITLES",
                                             "name": "Englishx",
                                             "trackContentType": "text/vtt",
