@@ -127,7 +127,7 @@ Additional option to specify the port from which the subtitles is streamed. This
 
 Additional option to specify the subtitles language. The language format is defined by RFC 5646.
     e.g. to serve the subtitles french subtitles
-    %s -subtitles_language en-US <file>
+    %s -subtitles_language fr <file>
     
 Additional option to supply custom parameters to the transcoder (ffmpeg or avconv)
     e.g. to transcode the media with an output video bitrate of 1000k
