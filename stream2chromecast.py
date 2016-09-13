@@ -469,17 +469,20 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None,
     sub = None
 
     if subtitles:
-        sub_port = 0
+        if os.path.isfile(subtitles):
+            sub_port = 0
 
-        if subtitles_port is not None:
-            sub_port = int(subtitles_port)
+            if subtitles_port is not None:
+                sub_port = int(subtitles_port)
 
-        sub_server = BaseHTTPServer.HTTPServer((webserver_ip, sub_port), SubRequestHandler)
-        thread2 = Thread(target=sub_server.handle_request)
-        thread2.start()
+            sub_server = BaseHTTPServer.HTTPServer((webserver_ip, sub_port), req_handler)
+            thread2 = Thread(target=sub_server.handle_request)
+            thread2.start()
 
-        sub = "http://%s:%s%s" % (webserver_ip, str(sub_server.server_port), urllib.quote_plus(subtitles, "/"))
-        print "sub URL: ", sub
+            sub = "http://%s:%s%s" % (webserver_ip, str(sub_server.server_port), urllib.quote_plus(subtitles, "/"))
+            print "sub URL: ", sub
+        else:
+            print "Subtitles file %s not found" % subtitles
 
     load(cast, url, req_handler.content_type, sub, subtitles_language)
 
