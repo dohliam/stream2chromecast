@@ -242,20 +242,8 @@ class TranscodingRequestHandler(RequestHandler):
         self.wfile.write("\r\n\r\n")
 
 
-class SubRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.protocol_version = "HTTP/1.1"
-        self.send_response(200)
-        filepath = urllib.unquote_plus(self.path)
-        with open(filepath) as file:
-            data = file.read()
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Content-type', 'text/vtt;charset=utf-8')
-        self.send_header('Content-length', len(data))
-        self.end_headers()
-        self.wfile.write(data)
-
-
+class SubRequestHandler(RequestHandler):
+    content_type = "text/vtt;charset=utf-8"
 
             
 def get_transcoder_cmds(preferred_transcoder=None):
@@ -475,7 +463,7 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None,
             if subtitles_port is not None:
                 sub_port = int(subtitles_port)
 
-            sub_server = BaseHTTPServer.HTTPServer((webserver_ip, sub_port), req_handler)
+            sub_server = BaseHTTPServer.HTTPServer((webserver_ip, sub_port), SubRequestHandler)
             thread2 = Thread(target=sub_server.handle_request)
             thread2.start()
 
