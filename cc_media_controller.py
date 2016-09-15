@@ -1,7 +1,7 @@
 """
 Provides a control interface to the Chromecast Media Player app
 
-version 0.2
+version 0.2.1
 
 """
 
@@ -291,9 +291,11 @@ class CCMediaController():
                     }
                 }
 
-        if sub:
+
+        if sub:        
             if sub_language is None:
                 sub_language = "en-US"
+                
             data["media"].update({
                                 "textTrackStyle":{
                                     'backgroundColor':'#FFFFFF00'
@@ -308,9 +310,11 @@ class CCMediaController():
                                            }],
                                 })
             data["activeTrackIds"] = [1]
+
         
         namespace = "urn:x-cast:com.google.cast.media"
         resp = self.send_msg_with_response(namespace, data)
+
 
         # wait for the player to return "BUFFERING", "PLAYING" or "IDLE"
         if resp.get("type", "") == "MEDIA_STATUS":            
