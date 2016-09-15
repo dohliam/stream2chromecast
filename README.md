@@ -133,6 +133,29 @@ By default, a random unused port will be selected to serve the media from. In a 
         stream2chromecast.py -port 8765 <file>
 
 
+###Subtitles
+Only the WebVTT format is currently supported and not when transcoding.
+
+ - to cast the subtitles on /path/to/subtitles.vtt
+
+        stream2chromecast.py -subtitles /path/to/subtitles.vtt <file>
+
+
+To specify the port from which the subtitles file is streamed. In a firewalled environment, it can be useful to be able to specify the port to open
+
+ - to serve the subtitles on port 8765
+
+        stream2chromecast.py -subtitles /path/to/subtitles.vtt -subtitles_port 8765 <file>
+
+
+To specify the subtitles language. The language format is defined by RFC 5646. (in most cases, this option should not be needed)
+
+ - to serve the subtitles french subtitles
+ 
+        stream2chromecast.py -subtitles /path/to/subtitles.vtt -subtitles_language fr <file>
+    
+    
+    
 ###Specify a buffer-size for the transcoder process
 By default, the transcoder process returns its data to be sent to the device without buffering. Buffering the data can help in situations where the network connection is slow.
 
@@ -177,4 +200,6 @@ Thanks to [dohliam](https://github.com/dohliam) for bug fixes and additional fun
 Thanks to [interlocuteur](https://github.com/interlocuteur) for bug fixes, error reports & advice.
 
 Thanks to [jsalatiel](https://github.com/jsalatiel) for suggestions & advice.
+
+Thanks to [palaviv](https://github.com/palaviv) for the subtitles functionality.
 
