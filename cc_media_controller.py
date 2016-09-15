@@ -251,7 +251,7 @@ class CCMediaController():
             
             
                     
-    def load(self, content_url, content_type):
+    def load(self, content_url, content_type, sub, sub_language):
         """ Launch the player app, load & play a URL """
         
         self.connect("receiver-0")
@@ -290,6 +290,24 @@ class CCMediaController():
                         }
                     }
                 }
+
+        if sub:
+            if sub_language is None:
+                sub_language = "en-US"
+            data["media"].update({
+                                "textTrackStyle":{
+                                    'backgroundColor':'#FFFFFF00'
+                                },
+                                "tracks": [{"trackId": 1,
+                                            "trackContentId": sub,
+                                            "type": "TEXT",
+                                            "language": sub_language,
+                                            "subtype": "SUBTITLES",
+                                            "name": "Englishx",
+                                            "trackContentType": "text/vtt",
+                                           }],
+                                })
+            data["activeTrackIds"] = [1]
         
         namespace = "urn:x-cast:com.google.cast.media"
         resp = self.send_msg_with_response(namespace, data)
