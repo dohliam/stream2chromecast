@@ -4,7 +4,7 @@ stream2chromecast.py: Chromecast media streamer for Linux
 
 author: Pat Carter - https://github.com/Pat-Carter/stream2chromecast
 
-version: 0.6.1
+version: 0.6.2
 
 """
 
@@ -27,7 +27,7 @@ version: 0.6.1
 # along with Stream2chromecast.  If not, see <http://www.gnu.org/licenses/>.
 
 
-VERSION = "0.6.1"
+VERSION = "0.6.2"
 
 
 import sys, os, errno
@@ -117,21 +117,26 @@ Additional option to specify the port from which the media is streamed. This can
     e.g. to serve the media on port 8765
     %s -port 8765 <file>
 
+
 Additional option to specify subtitles. Only WebVTT format is supported.
     e.g. to cast the subtitles on /path/to/subtitles.vtt
     %s -subtitles /path/to/subtitles.vtt <file>
+
 
 Additional option to specify the port from which the subtitles is streamed. This can be useful in a firewalled environment.
     e.g. to serve the subtitles on port 8765
     %s -subtitles_port 8765 <file>
 
+
 Additional option to specify the subtitles language. The language format is defined by RFC 5646.
     e.g. to serve the subtitles french subtitles
     %s -subtitles_language fr <file>
+
     
 Additional option to supply custom parameters to the transcoder (ffmpeg or avconv)
     e.g. to transcode the media with an output video bitrate of 1000k
     %s -transcode -transcodeopts '-b:v 1000k' <file>
+
     
 Additional option to specify the buffer size of the data returned from the transcoder. Increasing this can help when on a slow network.
     e.g. to specify a buffer size of 5 megabytes
@@ -242,8 +247,12 @@ class TranscodingRequestHandler(RequestHandler):
         self.wfile.write("\r\n\r\n")
 
 
+
 class SubRequestHandler(RequestHandler):
+    """ Handle HTTP requests for subtitles files """
     content_type = "text/vtt;charset=utf-8"
+
+
 
             
 def get_transcoder_cmds(preferred_transcoder=None):
@@ -439,7 +448,7 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None,
         req_handler.content_type = mimetype    
         
     
-    # create a webserver to handle a single request on a free port or a specific port if passed in the parameter   
+    # create a webserver to handle a single request for the media file on either a free port or on a specific port if passed in the port parameter   
     port = 0    
     
     if server_port is not None:
@@ -454,6 +463,8 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None,
 
     print "URL & content-type: ", url, req_handler.content_type
 
+
+    # create another webserver to handle a request for the subtitles file, if specified in the subtitles parameter
     sub = None
 
     if subtitles:
@@ -471,6 +482,7 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None,
             print "sub URL: ", sub
         else:
             print "Subtitles file %s not found" % subtitles
+
 
     load(cast, url, req_handler.content_type, sub, subtitles_language)
 
