@@ -4,7 +4,7 @@ stream2chromecast.py: Chromecast media streamer for Linux
 
 author: Pat Carter - https://github.com/Pat-Carter/stream2chromecast
 
-version: 0.6.2
+version: 0.6.3
 
 """
 
@@ -27,7 +27,7 @@ version: 0.6.2
 # along with Stream2chromecast.  If not, see <http://www.gnu.org/licenses/>.
 
 
-VERSION = "0.6.2"
+VERSION = "0.6.3"
 
 
 import sys, os, errno
@@ -133,24 +133,29 @@ Additional option to specify the subtitles language. The language format is defi
     %s -subtitles_language fr <file>
 
     
-Additional option to supply custom parameters to the transcoder (ffmpeg or avconv)
+Additional option to supply custom parameters to the transcoder (ffmpeg or avconv) output
     e.g. to transcode the media with an output video bitrate of 1000k
     %s -transcode -transcodeopts '-b:v 1000k' <file>
 
+    
+Additional option to supply custom parameters to the transcoder input
+    e.g. to transcode the media and seek to a position 15 minutes from the start of playback
+    %s -transcode -transcodeinputopts '-ss 00:15:00' <file>
+    
     
 Additional option to specify the buffer size of the data returned from the transcoder. Increasing this can help when on a slow network.
     e.g. to specify a buffer size of 5 megabytes
     %s -transcode -transcodebufsize 5242880 <file>
     
-""" % ((script_name,) * 20)
+""" % ((script_name,) * 21)
 
 
 
 
 PIDFILE = os.path.join(tempfile.gettempdir(), "stream2chromecast_%s.pid") 
 
-FFMPEG = 'ffmpeg -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error %s -'
-AVCONV = 'avconv -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error %s -'
+FFMPEG = 'ffmpeg %s -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error %s -'
+AVCONV = 'avconv %s -i "%s" -preset ultrafast -f mp4 -frag_duration 3000 -b:v 2000k -loglevel error %s -'
 
 
 
@@ -226,13 +231,14 @@ class TranscodingRequestHandler(RequestHandler):
     """ Handle HTTP requests for files which require realtime transcoding with ffmpeg """
     transcoder_command = FFMPEG
     transcode_options = ""
+    transcode_input_options = ""    
     bufsize = 0
                     
     def write_response(self, filepath):
         if self.bufsize != 0:
             print "transcode buffer size:", self.bufsize
         
-        ffmpeg_command = self.transcoder_command % (filepath, self.transcode_options) 
+        ffmpeg_command = self.transcoder_command % (self.transcode_input_options, filepath, self.transcode_options) 
         
         ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, shell=True, bufsize=self.bufsize)       
 
@@ -396,7 +402,7 @@ def get_mimetype(filename, ffprobe_cmd=None):
     
             
             
-def play(filename, transcode=False, transcoder=None, transcode_options=None,
+def play(filename, transcode=False, transcoder=None, transcode_options=None, transcode_input_options=None,
          transcode_bufsize=0, device_name=None, server_port=None,
          subtitles=None, subtitles_port=None, subtitles_language=None):
     """ play a local file on the chromecast """
@@ -439,6 +445,9 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None,
                 
             if transcode_options is not None:    
                 req_handler.transcode_options = transcode_options
+                
+            if transcode_input_options is not None:    
+                req_handler.transcode_input_options = transcode_input_options                
                 
             req_handler.bufsize = transcode_bufsize
         else:
@@ -668,8 +677,11 @@ def run():
     # optional server port parm. if not specified, a random available port will be used
     server_port = get_named_arg_value("-port", args)     
     
-    # optional transcode options parm. if specified, these options will be passed to the transcoder
+    # optional transcode options parm. if specified, these options will be passed to the transcoder to be applied to the output
     transcode_options = get_named_arg_value("-transcodeopts", args)     
+    
+    # optional transcode options parm. if specified, these options will be passed to the transcoder to be applied to the input data
+    transcode_input_options = get_named_arg_value("-transcodeinputopts", args)      
     
     # optional transcode bufsize parm. if specified, the transcoder will buffer approximately this many bytes of output
     transcode_bufsize = get_named_arg_value("-transcodebufsize", args, integer=True)
@@ -713,7 +725,7 @@ def run():
 
     elif args[0] == "-transcode":    
         arg2 = args[1]  
-        play(arg2, transcode=True, transcoder=transcoder, transcode_options=transcode_options, transcode_bufsize=transcode_bufsize,
+        play(arg2, transcode=True, transcoder=transcoder, transcode_options=transcode_options, transcode_input_options=transcode_input_options, transcode_bufsize=transcode_bufsize,
              device_name=device_name, server_port=server_port, subtitles=subtitles, subtitles_port=subtitles_port,
              subtitles_language=subtitles_language)
         
