@@ -129,7 +129,7 @@ It is also possible to pass in parameters to the transcoder to be applied to the
 
  - To specify a seek position of 15 minutes from the start of the media file
  
-        ./stream2chromecast.py -transcodeinputopts '-ss 00:15:00' -transcode <file>
+        stream2chromecast.py -transcodeinputopts '-ss 00:15:00' -transcode <file>
         
             
 ###Specify a port to use for streaming media.
