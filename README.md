@@ -118,11 +118,18 @@ If both ffmpeg and avconv are installed, ffmpeg will be used by default.
         
 
 ###Supply custom transcoder parameters
-It is possible pass in specific parameters to ffmpeg or avconv using the -transcodeopts parameter with the options surrounded by quotes
+It is possible to pass in specific parameters to ffmpeg or avconv using the -transcodeopts parameter with the options surrounded by quotes.
+These options are applied to the transcoder output.
 
  - To specify an output video bitrate of 1000k and an audio bitrate of 128k
 
         stream2chromecast.py -transcodeopts '-b:v 1000k -b:a 128k' -transcode <file>
+        
+It is also possible to pass in parameters to the transcoder to be applied to the transcoder input using the -transcodeinputopts parameter, again with the options surrounded by quotes. This can be useful for specifying a "seek" position.
+
+ - To specify a seek position of 15 minutes from the start of the media file
+ 
+        ./stream2chromecast.py -transcodeinputopts '-ss 00:15:00' -transcode <file>
         
             
 ###Specify a port to use for streaming media.
