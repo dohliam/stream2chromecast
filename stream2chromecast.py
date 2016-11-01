@@ -165,13 +165,15 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     """ Handle HTTP requests for files which do not need transcoding """
     
     def do_GET(self):
-        filepath = urllib.unquote_plus(self.path)
+        
+        query = self.path.split("?",1)[-1]
+        filepath = urllib.unquote_plus(query)
         
         self.suppress_socket_error_report = None
         
         self.send_headers(filepath)       
         
-        print "sending file"       
+        print "sending data"      
         try: 
             self.write_response(filepath)
         except socket.error, e:     
@@ -405,31 +407,35 @@ def get_mimetype(filename, ffprobe_cmd=None):
 def play(filename, transcode=False, transcoder=None, transcode_options=None, transcode_input_options=None,
          transcode_bufsize=0, device_name=None, server_port=None,
          subtitles=None, subtitles_port=None, subtitles_language=None):
-    """ play a local file on the chromecast """
+    """ play a local file or transcode from a file or URL and stream to the chromecast """
     
     print_ident()
-
-    if os.path.isfile(filename):
-        filename = os.path.abspath(filename)
-    else:
-        sys.exit("media file %s not found" % filename)
-        
-
+    
+    
     cast = CCMediaController(device_name=device_name)
     
     kill_old_pid(cast.host)
-    save_pid(cast.host)
+    save_pid(cast.host)    
+
+
+    if os.path.isfile(filename):
+        filename = os.path.abspath(filename)
+        print "source is file: %s" % filename
+    else:
+        if transcode and (filename.lower().startswith("http://") or filename.lower().startswith("https://")):
+            print "source is URL: %s" % filename
+        else: 
+            sys.exit("media file %s not found" % filename)
         
-    print "Playing:", filename
+
     
     transcoder_cmd, probe_cmd = get_transcoder_cmds(preferred_transcoder=transcoder)
-        
-    mimetype = get_mimetype(filename, probe_cmd)
+    
 
     status = cast.get_status()
     webserver_ip = status['client'][0]
     
-    print "my ip address:", webserver_ip
+    print "local ip address:", webserver_ip
         
     
     req_handler = RequestHandler
@@ -452,9 +458,11 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, tra
             req_handler.bufsize = transcode_bufsize
         else:
             print "No transcoder is installed. Attempting standard playback"
-            req_handler.content_type = mimetype    
-    else:
-        req_handler.content_type = mimetype    
+   
+    
+    
+    if req_handler == RequestHandler:
+        req_handler.content_type = get_mimetype(filename, probe_cmd)
         
     
     # create a webserver to handle a single request for the media file on either a free port or on a specific port if passed in the port parameter   
@@ -468,7 +476,8 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, tra
     thread = Thread(target=server.handle_request)
     thread.start()
 
-    url = "http://%s:%s%s" % (webserver_ip, str(server.server_port), urllib.quote_plus(filename, "/"))
+
+    url = "http://%s:%s?%s" % (webserver_ip, str(server.server_port), urllib.quote_plus(filename, "/"))
 
     print "URL & content-type: ", url, req_handler.content_type
 
@@ -487,7 +496,7 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, tra
             thread2 = Thread(target=sub_server.handle_request)
             thread2.start()
 
-            sub = "http://%s:%s%s" % (webserver_ip, str(sub_server.server_port), urllib.quote_plus(subtitles, "/"))
+            sub = "http://%s:%s?%s" % (webserver_ip, str(sub_server.server_port), urllib.quote_plus(subtitles, "/"))
             print "sub URL: ", sub
         else:
             print "Subtitles file %s not found" % subtitles
@@ -520,6 +529,7 @@ def load(cast, url, mimetype, sub=None, sub_language=None):
         
     finally:
         print "done"
+    
     
     
 def playurl(url, device_name=None):
