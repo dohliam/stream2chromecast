@@ -544,7 +544,7 @@ def playurl(url, device_name=None):
     resp = conn.getresponse()
     
     if resp.status != 200:
-        sys.exit("HTTP error:" + resp.status + " - " + resp.reason)
+        sys.exit("HTTP error:" + str(resp.status) + " - " + resp.reason)
         
     print "Found HTTP resource"
     
