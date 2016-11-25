@@ -558,9 +558,10 @@ def playurl(url, device_name=None):
     resp = get_resp(url)
 
     if resp.status != 200:
-        if resp.status == 301 or resp.status == 302:
+        redirect_codes = [ 301, 302, 303, 307, 308 ]
+        if resp.status in redirect_codes:
             redirects = 0
-            while resp.status == 301 or resp.status == 302:
+            while resp.status in redirect_codes:
                 redirects += 1
                 if redirects > 9:
                     sys.exit("HTTP Error: Too many redirects")
@@ -569,7 +570,10 @@ def playurl(url, device_name=None):
                     if len(header) > 1:
                         if header[0].lower() == "location":
                             redirect_url = header[1]
+                print "Redirecting to " + redirect_url
                 resp = get_resp(redirect_url)
+            if resp.status != 200:
+                sys.exit("HTTP error:" + str(resp.status) + " - " + resp.reason)
         else:
             sys.exit("HTTP error:" + str(resp.status) + " - " + resp.reason)
         
