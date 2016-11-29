@@ -554,7 +554,27 @@ def playurl(url, device_name=None):
     
         resp = conn.getresponse()
         return resp
-    
+
+
+    def get_full_url(url, location):
+        url_parsed = urlparse.urlparse(url)
+
+        scheme = url_parsed.scheme
+        host = url_parsed.netloc
+
+        if location.startswith("/") is False:
+            path = url.split(host, 1)[-1] 
+            if path.endswith("/"):
+                path = path.rsplit("/", 2)[0]
+            else:
+                path = path.rsplit("/", 1)[0] + "/"
+            location = path + location
+
+        full_url = scheme + "://" + host + location
+
+        return full_url
+
+
     resp = get_resp(url)
 
     if resp.status != 200:
@@ -569,9 +589,11 @@ def playurl(url, device_name=None):
                 for header in headers:
                     if len(header) > 1:
                         if header[0].lower() == "location":
-                            redirect_url = header[1]
-                print "Redirecting to " + redirect_url
-                resp = get_resp(redirect_url)
+                            redirect_location = header[1]
+                if redirect_location.startswith("http") is False:
+                    redirect_location = get_full_url(url, redirect_location)
+                print "Redirecting to " + redirect_location
+                resp = get_resp(redirect_location)
             if resp.status != 200:
                 sys.exit("HTTP error:" + str(resp.status) + " - " + resp.reason)
         else:
