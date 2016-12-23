@@ -31,6 +31,7 @@ VERSION = "0.6.3"
 
 
 import sys, os, errno
+import re
 import signal
 
 from cc_media_controller import CCMediaController
@@ -129,7 +130,7 @@ Additional option to specify the port from which the media is streamed. This can
     %s -port 8765 <file>
 
 
-Additional option to specify subtitles. Only WebVTT format is supported.
+Additional option to specify subtitles. SRT and WebVTT formats are supported.
     e.g. to cast the subtitles on /path/to/subtitles.vtt
     %s -subtitles /path/to/subtitles.vtt <file>
 
@@ -497,6 +498,17 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, tra
     if subtitles:
         if os.path.isfile(subtitles):
             sub_port = 0
+
+            #convert srt to vtt, case needed
+            if subtitles[-3:] == 'srt':
+                print "Converting subtitle to WebVTT"
+                with open(subtitles, 'r') as srtfile:
+                   content = srtfile.read()
+                   content = re.sub(r'([\d]+)\,([\d]+)', r'\1.\2', content)
+                   subtitles = subtitles.replace('.srt', '.vtt')
+ 
+                   with open(subtitles, 'w') as vttfile:
+                       vttfile.write("WEBVTT\n\n" + content)
 
             if subtitles_port is not None:
                 sub_port = int(subtitles_port)
