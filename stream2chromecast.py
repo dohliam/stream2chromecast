@@ -422,7 +422,7 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, tra
         filename = os.path.abspath(filename)
         print "source is file: %s" % filename
     else:
-        if transcode and (filename.lower().startswith("http://") or filename.lower().startswith("https://")):
+        if transcode and (filename.lower().startswith("http://") or filename.lower().startswith("https://") or filename.lower().startswith("rtsp://")):
             print "source is URL: %s" % filename
         else: 
             sys.exit("media file %s not found" % filename)
