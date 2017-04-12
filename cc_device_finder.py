@@ -30,9 +30,17 @@ Parts of this are adapted from code found in PyChromecast - https://github.com/b
 import os
 import socket, select
 import datetime
-import urlparse
 
-import httplib, urllib
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
+try:
+    import http.client as httplib
+except ImportError:
+    import httplib
+
 from xml.etree import ElementTree
 
 CACHE_FILE = "~/.cc_device_cache"
@@ -55,7 +63,7 @@ def search_network(device_limit=None, time_limit=5):
                        'ST: urn:dial-multiscreen-org:service:dial:1',
                        '',''])
                        
-    sock.sendto(req, ("239.255.255.250", 1900))
+    sock.sendto(req.encode(), ("239.255.255.250", 1900))
 
 
     while True:
@@ -68,13 +76,13 @@ def search_network(device_limit=None, time_limit=5):
         if sock in readable:
             st, addr = None, None
             
-            data = sock.recv(1024)
+            data = sock.recv(1024).decode()
 
             for line in data.split("\r\n"):
                 line = line.replace(" ", "")
             
                 if line.upper().startswith("LOCATION:"):
-                    addr = urlparse.urlparse(line[9:].strip()).hostname
+                    addr = urlparse(line[9:].strip()).hostname
                 
                 elif line.upper().startswith("ST:"):
                     st = line[3:].strip()
@@ -137,7 +145,7 @@ def check_cache(name):
                         if name == hostname:
                             # name is found - check that the host responds with the same name
                             device_name = get_device_name(host)
-                            print "Device name response:", device_name
+                            print("Device name response: " + device_name)
                             if name == device_name and device_name != "":
                                 result = host
                                 break
@@ -153,7 +161,7 @@ def save_cache(host_map):
     
     filepath = os.path.expanduser(CACHE_FILE)
     with open(filepath, "w") as f:
-        for key in host_map.keys():
+        for key in host_map:
             if len(key) > 0 and len(host_map[key]) > 0:
                 # file format: hostname[tab]ip_addr
                 f.write(key + "\t" + host_map[key] + "\n")
@@ -165,7 +173,7 @@ def find_device(name=None, time_limit=6):
     
     if name is None or name == "":
         # no name specified so find the first device that responds
-        print "searching the network for a Chromecast device"
+        print("searching the network for a Chromecast device")
         hosts = search_network(device_limit=1)
         if len(hosts) > 0:
             return hosts[0], get_device_name(hosts[0])
@@ -176,11 +184,11 @@ def find_device(name=None, time_limit=6):
         ip_addr = check_cache(name)
         if ip_addr is not None:
             # address found in cache
-            print "found device in cache:", name
+            print("found device in cache: " + name)
             return ip_addr, name
         else:
             # no cached results found run a full network search
-            print "searching the network for:", name
+            print("searching the network for: " + name)
             result_map = {}
             
             hosts = search_network(time_limit=time_limit)
@@ -191,8 +199,8 @@ def find_device(name=None, time_limit=6):
                 
             save_cache(result_map)
             
-            if name in result_map.keys():
-                print "found device:", name
+            if name in result_map:
+                print("found device: " + name)
                 return result_map[name], name
             else:
                 return None, None

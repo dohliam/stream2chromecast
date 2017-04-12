@@ -25,7 +25,7 @@ version 0.2.1
 
 
 
-import socket, ssl, select
+import socket, ssl
 import json
 import sys
 import time
@@ -66,7 +66,7 @@ class CCMediaController():
         if is_ip_addr:
             host = device_name
             try:
-                print "ip_addr:", host, "device name:", cc_device_finder.get_device_name(host)
+                print("ip_addr: " + host + " device name: " + cc_device_finder.get_device_name(host))
             except socket.error:
                 sys.exit("No Chromecast found on ip:" + host)
         else:
@@ -116,7 +116,7 @@ class CCMediaController():
     def read_message(self):
         """ read a complete message from the device """
 
-        data = ""
+        data = b""
         while len(data) < 4:
             data += self.sock.recv(4)
         
@@ -130,7 +130,7 @@ class CCMediaController():
         message = {}
         
         try:
-            message = json.loads(message_dict['data'])
+            message = json.loads(message_dict['data'].decode())
         except:
             pass
         
@@ -169,7 +169,7 @@ class CCMediaController():
             elif msg_type == "MEDIA_STATUS":
                 self.update_media_status_data(msg)
             
-            if "requestId" in msg.keys() and msg['requestId'] == request_id:
+            if "requestId" in msg and msg['requestId'] == request_id:
                 resp = msg
                 
         return resp
@@ -193,16 +193,16 @@ class CCMediaController():
         
         self.receiver_app_status = None
         
-        if msg.has_key('status'):
+        if 'status' in msg:
             status = msg['status']
-            if status.has_key('applications'):
+            if 'applications' in status:
                 self.current_applications = status['applications']
                 for application in self.current_applications:
                     if application.get("appId") == MEDIAPLAYER_APPID:
                         self.receiver_app_status = application
                         
                         
-            if status.has_key('volume'):
+            if 'volume' in status:
                 self.volume_status = status['volume']
                         
                         
@@ -324,7 +324,7 @@ class CCMediaController():
                 
                 self.get_media_status()
                 
-                if self.media_status != None:
+                if self.media_status is not None:
                     player_state = self.media_status.get("playerState", "")
 
                 
@@ -332,15 +332,17 @@ class CCMediaController():
 
 
             
-    def control(self, command, parameters={}):      
+    def control(self, command, parameters=None):
         """ send a control command to the player """
           
+        if parameters is None:
+            parameters = {}
         self.connect("receiver-0")
 
         self.get_receiver_status()
         
         if self.receiver_app_status is None:
-            print "No media player app running"
+            print("No media player app running")
             self.close_socket()
             return      
         
@@ -405,10 +407,10 @@ class CCMediaController():
             if status['receiver_status'] is None:
                 return True
             else:    
-                return status['receiver_status'].get("statusText", "") == u"Ready To Cast"
+                return status['receiver_status'].get("statusText", "") == "Ready To Cast"
 
         else:    
-            return status['media_status'].get("playerState", "") == u"IDLE"
+            return status['media_status'].get("playerState", "") == "IDLE"
        
        
 

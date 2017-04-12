@@ -44,7 +44,7 @@ def format_field_id(field_no, field_type):
 def format_varint_value(int_value):
     """ returns a varint type integer from a python integer """
     
-    varint_result = ""        
+    varint_result = b""
     
     while(int_value > 127):
         varint_result += pack("B", int_value & 127 | 128) 
@@ -73,7 +73,7 @@ def format_string_field(field_number, field_data):
     
     field =  pack("B", format_field_id(field_number, 2))   #  2 = Length-delimited field type  
     field += pack("%ds" % len(field_data_len), field_data_len)
-    field += pack("%ds" % len(field_data), field_data)   
+    field += pack("%ds" % len(field_data), field_data.encode())
     
     return field  
     
@@ -89,7 +89,7 @@ def prepend_length_header(msg):
 def format_message(source_id, destination_id, namespace, data):    
     """ formats a message to be sent to the Chromecast """
     
-    msg = ""
+    msg = b""
     msg += format_int_field(1, 0)   # Protocol Version  =  0
     msg += format_string_field(2, source_id)
     msg += format_string_field(3, destination_id)
@@ -113,7 +113,7 @@ def extract_length_header(msg):
         return None
         
     len_data = msg[:4]
-    remainder = ""
+    remainder = b""
     if len(msg) > 4:
         remainder = msg[4:]
     
@@ -134,8 +134,8 @@ def extract_field_id(data):
 def extract_int_field(data):
     """ extracts a protocol buffers Int field from a received message """
     
-    field_id = extract_field_id(data[0])
-    int_value = unpack("B", data[1])[0]
+    field_id = extract_field_id(data[0:1])
+    int_value = unpack("B", data[1:2])[0]
     
     remainder = ""
     if len(data) > 2:
@@ -148,19 +148,19 @@ def extract_int_field(data):
 def extract_string_field(data):
     """ extracts a protocol buffers length-delimited field from a received message """
     
-    field_id = extract_field_id(data[0])    
+    field_id = extract_field_id(data[0:1])
     
     # extract varint length
     length = 0
     ptr = 1
-    byte = unpack("B", data[ptr])[0]
+    byte = unpack("B", data[ptr:ptr+1])[0]
 
     while byte & 128:
         length += byte & 127
         length = length << 7
         
         ptr += 1
-        byte = unpack("B", data[ptr])[0]
+        byte = unpack("B", data[ptr:ptr+1])[0]
         
     length += byte
     
