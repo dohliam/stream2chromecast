@@ -53,7 +53,7 @@ To play a supported file from a URL.
         stream2chromecast.py -playurl http://www.example.com/my_media.mp4
 
 
-###Control playback
+### Control playback
 
  - pause playback (currently only works when not transcoding)
    
@@ -68,7 +68,7 @@ To play a supported file from a URL.
         stream2chromecast.py -stop  
 
 
-###Volume control
+### Volume control
 
  - set volume (takes a value between 0.0 and 1.0)
 
@@ -85,14 +85,14 @@ To play a supported file from a URL.
         
         
           
-###Status
+### Status
 
  - get Chromecast status
 
         stream2chromecast.py -status
         
         
-###Specifying a device when there are multiple Chromecasts on the network
+### Specifying a device when there are multiple Chromecasts on the network
 To specify a device by name or IP address, use the -devicename parameter.
 e.g.
 
@@ -109,7 +109,7 @@ e.g.
         stream2chromecast.py -devicelist
 
 
-###Specify which transcoder to use
+### Specify which transcoder to use
 If both ffmpeg and avconv are installed, ffmpeg will be used by default. 
 
  - To specify avconv to be used and transcode a playback, use the -transcoder option
@@ -117,7 +117,7 @@ If both ffmpeg and avconv are installed, ffmpeg will be used by default.
         stream2chromecast.py -transcoder avconv -transcode <file>
         
 
-###Supply custom transcoder parameters
+### Supply custom transcoder parameters
 It is possible to pass in specific parameters to ffmpeg or avconv using the -transcodeopts parameter with the options surrounded by quotes.
 These options are applied to the transcoder output.
 
@@ -132,7 +132,7 @@ It is also possible to pass in parameters to the transcoder to be applied to the
         stream2chromecast.py -transcodeinputopts '-ss 00:15:00' -transcode <file>
         
             
-###Specify a port to use for streaming media.
+### Specify a port to use for streaming media.
 By default, a random unused port will be selected to serve the media from. In a firewalled environment, it can be useful to be able to specify the port to open
 
  - To specify port 8765 to serve media from
@@ -140,7 +140,7 @@ By default, a random unused port will be selected to serve the media from. In a 
         stream2chromecast.py -port 8765 <file>
 
 
-###Subtitles
+### Subtitles
 Only the WebVTT format is currently supported and not when transcoding.
 
  - to cast the subtitles on /path/to/subtitles.vtt
@@ -163,7 +163,7 @@ To specify the subtitles language. The language format is defined by RFC 5646. (
     
     
     
-###Specify a buffer-size for the transcoder process
+### Specify a buffer-size for the transcoder process
 By default, the transcoder process returns its data to be sent to the device without buffering. Buffering the data can help in situations where the network connection is slow.
 
  - To specify a buffer size of 5 megabytes
