@@ -143,35 +143,35 @@ def extract_int_field(data):
     
     return field_id, int_value, remainder
     
-    
+
+def extract_varint(data):
+    # extract varint
+    # LSB first
+    value = 0
+    ptr = 0
+    mul = 1
+    while True:
+        byte = unpack("B", data[ptr])[0]
+        value += mul * (byte & 127)
+        ptr += 1
+        if not byte & 128:
+            break
+        mul *= 128
+
+    remainder = data[ptr:]
+    return value, remainder
+        
     
 def extract_string_field(data):
     """ extracts a protocol buffers length-delimited field from a received message """
     
-    field_id = extract_field_id(data[0:1])
+    field_id = extract_field_id(data[0])    
+    data = data[1:]
     
     # extract varint length
-    length = 0
-    ptr = 1
-    byte = unpack("B", data[ptr:ptr+1])[0]
-
-    while byte & 128:
-        length += byte & 127
-        length = length << 7
-        
-        ptr += 1
-        byte = unpack("B", data[ptr:ptr+1])[0]
-        
-    length += byte
-    
-    ptr += 1
-    string_end_ptr = ptr + length
-    string = data[ptr:string_end_ptr]
-    
-    remainder = ""
-    if len(data) > string_end_ptr:
-        remainder = data[string_end_ptr:]
-        
+    length, data = extract_varint(data)
+    string = data[:length]
+    remainder = data[length:]        
     return field_id, string, remainder
     
     
