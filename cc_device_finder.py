@@ -1,7 +1,7 @@
 """
 Locates Chromecast devices on the local network.
 
-version 0.3.1
+version 0.4
 
 Parts of this are adapted from code found in PyChromecast - https://github.com/balloob/pychromecast
 
@@ -43,10 +43,32 @@ except ImportError:
 
 from xml.etree import ElementTree
 
+import struct
+import json
+
 CACHE_FILE = "~/.cc_device_cache"
+
+SSDP_ENABLED = False
+MDNS_ENABLED = True
 
 
 def search_network(device_limit=None, time_limit=5):
+    """ Search network for Chromecast devices using mDNS and SSDP """
+    addrs = []
+    
+    if MDNS_ENABLED:
+        addrs += search_network_mdns(device_limit=device_limit, time_limit=time_limit)
+        if device_limit and len(addrs) >= device_limit:
+            return addrs
+            
+    if SSDP_ENABLED or len(addrs) == 0:
+        addrs += search_network_ssdp(device_limit=device_limit, time_limit=time_limit)
+        
+    return addrs
+    
+
+
+def search_network_ssdp(device_limit=None, time_limit=5):
     """ SSDP discovery """
     
     addrs = []
@@ -99,6 +121,71 @@ def search_network(device_limit=None, time_limit=5):
 
     return addrs
     
+    
+    
+def search_network_mdns(device_limit=None, time_limit=5):
+    """ mDNS discovery """
+    
+    addrs = []
+
+    # A rough and ready quick-hack mDNS client - this should be improved
+ 
+    
+    # build query
+    query_format = "\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00%s\x00\x00\x0c\x00\x01"
+    
+    service_type = "_googlecast._tcp.local."
+    
+    query_data = ""
+    for query_part in service_type.split("."):
+        if len(query_part) > 0:
+            query_data += struct.pack("b", len(query_part)) + query_part
+            
+    
+    query = query_format % query_data
+    
+    
+    # setup multicast socket    
+    m_addr, m_port = ('224.0.0.251', 5353)
+
+    intf = socket.gethostbyname(socket.gethostname())
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_TTL, 255)
+    sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_LOOP, 1)
+    sock.bind(('', m_port))
+    sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(intf) + socket.inet_aton('0.0.0.0'))
+    sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(m_addr) + socket.inet_aton('0.0.0.0'))
+
+    sock.settimeout(time_limit)
+
+
+    try:
+        print "Sending mDNS query"
+        sock.sendto(query, 0, (m_addr, m_port))    
+
+        while True:
+            try:
+                data, addr = sock.recvfrom(1024)
+                
+                # TODO parse the response properly, but for now this should identify chromecast responses
+                if query_data in data and "md=Chromecast" in data:
+                    print "chromecast found:", addr[0]
+                    addrs.append(addr[0])
+                    
+                    if device_limit and len(addrs) == device_limit:
+                        print "enough devices found"
+                        break                    
+                                    
+            except socket.timeout:
+                break
+
+    finally:
+        sock.close()    
+        
+    return addrs    
+    
 
                                       
 def get_device_name(ip_addr):
@@ -106,26 +193,41 @@ def get_device_name(ip_addr):
     
     try:
         conn = httplib.HTTPConnection(ip_addr + ":8008")
-        conn.request("GET", "/ssdp/device-desc.xml")
-        resp = conn.getresponse()
-       
+        conn.request("GET", "/setup/eureka_info?options=detail")
+        resp = conn.getresponse()  
+
         if resp.status == 200:
-            status_doc = resp.read()
-            try:
-                xml = ElementTree.fromstring(status_doc)
+            status_doc = resp.read()   
+            message = json.loads(status_doc) 
 
-                device_element = xml.find("{urn:schemas-upnp-org:device-1-0}" + "device")
-
-                return device_element.find("{urn:schemas-upnp-org:device-1-0}" + "friendlyName").text
-
-            except ElementTree.ParseError:
-                return ""    
+            return message['name']                         
+   
         else:
-            return "" 
+            if resp.status == 404:
+                # eureka info not found, falling back to try SSDP description
+                
+                conn = httplib.HTTPConnection(ip_addr + ":8008")
+                conn.request("GET", "/ssdp/device-desc.xml")
+                resp = conn.getresponse()
+                
+                if resp.status == 200:
+                    status_doc = resp.read()
+                    try:
+                        xml = ElementTree.fromstring(status_doc)
+
+                        device_element = xml.find("{urn:schemas-upnp-org:device-1-0}" + "device")
+
+                        return device_element.find("{urn:schemas-upnp-org:device-1-0}" + "friendlyName").text
+
+                    except ElementTree.ParseError:
+                        return "" 
+            else:
+                return "" 
     except:
         # unable to get a name - this might be for many reasons 
         # e.g. a non chromecast device on the network that responded to the search
         return "" 
+        
         
         
 
