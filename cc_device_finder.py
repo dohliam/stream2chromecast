@@ -170,7 +170,7 @@ def search_network_mdns(device_limit=None, time_limit=5):
                 data, addr = sock.recvfrom(1024)
                 
                 # TODO parse the response properly, but for now this should identify chromecast responses
-                if query_data in data and "md=Chromecast" in data:
+                if query_data in data and "md=Chromecast" in data and addr[0] not in addrs:
                     print "chromecast found:", addr[0]
                     addrs.append(addr[0])
                     
