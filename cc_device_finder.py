@@ -162,7 +162,7 @@ def search_network_mdns(device_limit=None, time_limit=5):
 
 
     try:
-        print "Sending mDNS query"
+        print("Sending mDNS query")
         sock.sendto(query, 0, (m_addr, m_port))    
 
         while True:
@@ -171,11 +171,11 @@ def search_network_mdns(device_limit=None, time_limit=5):
                 
                 # TODO parse the response properly, but for now this should identify chromecast responses
                 if query_data in data and "md=Chromecast" in data and addr[0] not in addrs:
-                    print "chromecast found:", addr[0]
+                    print("chromecast found:", addr[0])
                     addrs.append(addr[0])
                     
                     if device_limit and len(addrs) == device_limit:
-                        print "enough devices found"
+                        print("enough devices found")
                         break                    
                                     
             except socket.timeout:

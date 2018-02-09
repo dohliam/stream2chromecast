@@ -501,7 +501,7 @@ def play(filename, transcode=False, transcoder=None, transcode_options=None, tra
 
             #convert srt to vtt, case needed
             if subtitles[-3:] == 'srt':
-                print "Converting subtitle to WebVTT"
+                print("Converting subtitle to WebVTT")
                 with open(subtitles, 'r') as srtfile:
                    content = srtfile.read()
                    content = re.sub(r'([\d]+)\,([\d]+)', r'\1.\2', content)
